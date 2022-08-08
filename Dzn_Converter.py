@@ -1,10 +1,10 @@
-txt_path = "..\data\instances"
-dzn_path = "..\CP\instances"
+txt_path = "data/instances"
+dzn_path = "CP/instances"
 
 
 for k in range(1, 41):
-    output_filename = dzn_path + "\ins-" + str(k) + ".dzn"
-    input_filename = txt_path + "\ins-" + str(k) + ".txt"
+    output_filename = dzn_path + "/ins-" + str(k) + ".dzn"
+    input_filename = txt_path + "/ins-" + str(k) + ".txt"
 
     with open(input_filename, 'r') as f_in:
         lines = f_in.read().splitlines()

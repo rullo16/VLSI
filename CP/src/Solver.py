@@ -21,8 +21,8 @@ def solve(cores, model, input, output_dir):
 def main():
     cores = 1
     model = 'model.mzn'
-    input = '..\instances\ins-21.dzn'
-    output_dir = "..\out"
+    input = '../instances/ins-21.dzn'
+    output_dir = "../out"
 
     solve(cores,model,input,output_dir)
 
