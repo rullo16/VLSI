@@ -6,11 +6,9 @@ from itertools import combinations
 
 def compute_length(x, y, w):
     max_l = sum(y)
-    max_x = max(x)
-    max_y = max(y)
-    w_blocks = w // max_x
-    max_l = -(max_l // - w_blocks)
-    max_l = max_y if max_l < max_y else max_l
+    block_width = w // max(x)
+    max_l = -(max_l // - block_width)
+    max_l = max(y) if max_l < max(y) else max_l
     return max_l
 
 
@@ -29,8 +27,25 @@ def open_data(filename):
             y.append(int(split[1]))
         h = compute_length(x, y, int(w))
 
-        return int(w), int(n), x, y, h
+        len_w = len(str(w))
+        magnitude_w = 10 ** len_w
 
+        return int(w), int(n), x, y, h, magnitude_w
+
+def z3_maximum(vector):
+    maximum = vector[0]
+    for value in vector[1:]:
+        maximum = If(value > maximum, value,maximum)
+    return maximum
+
+
+def z3_cumulative(start, duration, resources, total):
+    decomposition = []
+    for u in resources:
+        decomposition.append(sum([
+            If(And(start[i] <= u, u<start[i]+duration[i]),resources[i],0) 
+            for i in range(len(start))])<= total)
+    return decomposition
 
 def write_output(w, n, x, y, pos_x, pos_y, length, output_file, elapsed_time):
     with open(output_file, 'w+') as out_file:
@@ -42,26 +57,12 @@ def write_output(w, n, x, y, pos_x, pos_y, length, output_file, elapsed_time):
         out_file.write('{}'.format(elapsed_time))
 
 
-def z3_max(vector):
-    maximum = vector[0]
-    for value in vector[1:]:
-        maximum = If(value > maximum, value,maximum)
-    return maximum
-
-
-def z3_cumulative(start, duration, resources, total):
-    decomposition = []
-    for u in resources:
-        decomposition.append(sum([If(And(start[i] <= u, u<start[i]+duration[i]),resources[i],0) for i in range(len(start))])<= total)
-    return decomposition
-
-
 def solver(input_file, output_dir):
     instance_name = input_file.split('\\')[-1] if os.name == 'nt' else input_file.split('/')[-1]
     instance_name = instance_name[:len(instance_name) - 4]
     output_file = os.path.join(output_dir, instance_name + '-out.txt')
 
-    w, n, x, y, max_l = open_data(input_file)
+    w, n, x, y, max_l, w_mag = open_data(input_file)
 
     # Circuit with highest value
     index = np.argmax(np.asarray(y))
@@ -74,28 +75,28 @@ def solver(input_file, output_dir):
     pos_x = [Int("pos_x_%s" % str(i + 1)) for i in range(n)]
     pos_y = [Int("pos_y_%s" % str(i + 1)) for i in range(n)]
 
-    length = z3_max([pos_y[i] + y[i] for i in range(n)])
+    length = z3_maximum([pos_y[i] + y[i] for i in range(n)])
 
     # plate bounds
     plate_x = [pos_x[i] >= 0 for i in range(n)]
     plate_y = [pos_y[i] >= 0 for i in range(n)]
 
     # Differentiate all coordinates
-    alldifferent = [Distinct([pos_y[i] + pos_x[i]]) for i in range(n)]
+    alldifferent = [Distinct([w_mag * pos_y[i] + pos_x[i]]) for i in range(n)]
 
     # Cumulative constraints
     cumulative_x = z3_cumulative(pos_x, x, y, max_l)
     cumulative_y = z3_cumulative(pos_y, y, x, w)
 
     # max width
-    max_w = [z3_max([pos_x[i] + x[i] for i in range(n)]) <= w]
+    max_w = [z3_maximum([pos_x[i] + x[i] for i in range(n)]) <= w]
 
     # max height
-    max_h = [z3_max([pos_y[i] + y[i] for i in range(n)]) <= max_l]
+    max_h = [z3_maximum([pos_y[i] + y[i] for i in range(n)]) <= max_l]
 
     # Avoid overlapping
     overlapping = []
-    for (i, j) in combinations(range(n), 2):
+    for (i, j) in combinations(range(n), 2):#combination returns successive r-length combinations of elements in iterable
         overlapping.append(Or(pos_x[i] + x[i] <= pos_x[j], pos_x[j] + x[j] <= pos_x[i],
                               pos_y[i] + y[i] <= pos_y[j], pos_y[j] + y[j] <= pos_y[j]))
 
@@ -142,7 +143,7 @@ def solver(input_file, output_dir):
 
 
 def main():
-    input = "../../data/instances/ins-8.txt"
+    input = "../../data/instances/ins-1.txt"
     output = "../out"
     solver(input, output)
 

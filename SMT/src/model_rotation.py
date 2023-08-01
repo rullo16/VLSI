@@ -21,7 +21,7 @@ def solver(input_file, output_dir):
     instance_name = instance_name[:len(instance_name) - 4]
     output_file = os.path.join(output_dir, instance_name + '-out.txt')
 
-    w, n, x, y, max_l = model_main.open_data(input_file)
+    w, n, x, y, max_l, w_mag = model_main.open_data(input_file)
 
     # Circuit with highest value
     index = np.argmax(np.asarray(y))
@@ -40,7 +40,7 @@ def solver(input_file, output_dir):
     rot_x = [If(And(x[i]!=y[i], rotation[i]), y[i], x[i]) for i in range(n)]
     rot_y = [If(And(x[i] != y[i], rotation[i]), x[i], y[i]) for i in range(n)]
 
-    length = model_main.z3_max([pos_y[i] + y[i] for i in range(n)])
+    length = model_main.z3_maximum([pos_y[i] + y[i] for i in range(n)])
 
     # plate bounds
     plate_x = [pos_x[i] >= 0 for i in range(n)]
@@ -51,17 +51,17 @@ def solver(input_file, output_dir):
     bound_height = [And(rot_y[i]>=1,rot_y[i]<=max_l) for i in range(n)]
 
     # Differentiate all coordinates
-    alldifferent = [Distinct([pos_y[i] + pos_x[i]]) for i in range(n)]
+    alldifferent = [Distinct([w_mag*pos_y[i] + pos_x[i]]) for i in range(n)]
 
     # Cumulative constraints
     cumulative_x = model_main.z3_cumulative(pos_x, x, y, max_l)
     cumulative_y = model_main.z3_cumulative(pos_y, y, x, w)
 
     # max width
-    max_w = [model_main.z3_max([pos_x[i] + x[i] for i in range(n)]) <= w]
+    max_w = [model_main.z3_maximum([pos_x[i] + x[i] for i in range(n)]) <= w]
 
     # max height
-    max_h = [model_main.z3_max([pos_y[i] + y[i] for i in range(n)]) <= max_l]
+    max_h = [model_main.z3_maximum([pos_y[i] + y[i] for i in range(n)]) <= max_l]
 
     # Avoid overlapping
     overlapping = []
@@ -78,7 +78,7 @@ def solver(input_file, output_dir):
     #Optimizer
 
     optimizer = Optimize()
-    optimizer.add(plate_x+plate_y+alldifferent+overlapping+cumulative_x+cumulative_y+max_w+max_h+symmetry+move_left)
+    optimizer.add(plate_x+plate_y+alldifferent+overlapping+cumulative_x+cumulative_y+max_w+max_h+symmetry+bound_height+bound_width+move_left)
     optimizer.minimize(length)
 
     #Execution time
