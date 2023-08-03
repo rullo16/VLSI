@@ -2,47 +2,43 @@ include "alldifferent.mzn";
 include "cumulative.mzn";
 include "diffn.mzn";
 
-int: w;
-int: n;
+% Define problem parameters
+int: w; % Width of the plate
+int: n; % Number of circuits
 
+% Circuit dimensions
+array[1..n] of int: x;
+array[1..n] of int: y;
 
-set of int: CIRCUITS = 1..n;
+% Compute length bounds based on circuit area
+int: max_h = sum(y); % Length upper bound
+int: circuit_area = sum(k in 1..n)(x[k] * y[k]);
+int: min_h = circuit_area div w; % Length lower bound
 
-array[CIRCUITS] of int: x;
-array[CIRCUITS] of int: y;
+% Define the variable for the plate length
+var min_h..max_h: h;
 
-int: max_h = sum(y);%length upperbound
-int: circuit_area = sum(k in CIRCUITS)(x[k] * y[k]);
-int: min_h = circuit_area div w;%length lowerbound
+% Variables for the circuit coordinates
+array[1..n] of var 0..w-min(x): pos_x; % x coordinate of circuits
+array[1..n] of var 0..max_h-min(y): pos_y; % y coordinate of circuits
 
-var min_h..max_h: h; %length
+% Constraints
+constraint max([x[i] + pos_x[i] | i in 1..n]) <= w; % Check if circuits are inside the plate width
+constraint max([y[i] + pos_y[i] | i in 1..n]) <= h; % Check if circuits are inside the plate length
 
+constraint diffn(pos_x, pos_y, x, y); % Non-overlapping constraint for circuit coordinates
 
-%Variables
+constraint cumulative(pos_y, y, x, w); % Cumulative constraint for circuits in the y direction
 
-%x coordinate of circuits
-array[CIRCUITS] of var 0..w-min(x): pos_x;
+% Symmetry breaking constraint to break symmetrical solutions
+constraint lex_lesseq([pos_x[k] | k in 1..n], [w-pos_x[k]-x[k] | k in 1..n]);
 
-%y coordinate of circuits
-array[CIRCUITS] of var 0..max_h-min(y): pos_y;
+% Solver
+solve::seq_search([
+  int_search(pos_y, first_fail, indomain_min),
+  int_search(pos_x, first_fail, indomain_min),
+  int_search([h], smallest, indomain_min)
+]) minimize h;
 
-%Constraints
-constraint max([x[i] + pos_x[i] | i in CIRCUITS])<= w;
-constraint max([y[i] + pos_y[i] | i in CIRCUITS])<= h;
-
-constraint diffn(pos_x,pos_y,x,y);
-
-constraint cumulative(pos_y,y,x,w);
-
-%Symmetry breaking constraint
-constraint lex_lesseq([pos_x[k]|k in CIRCUITS], [w-pos_x[k]-x[k] | k in CIRCUITS]);
-
-%Solver
-
-solve:: seq_search([
-  int_search(pos_y,first_fail,indomain_min),
-  int_search(pos_x,first_fail,indomain_min),
-  int_search([h], smallest, indomain_min)])
-  minimize h;
-
-output ["\(w) \(h)\n\(n)\n"] ++ ["\(x[i]) \(y[i]) \(pos_x[i]) \(pos_y[i])\n" | i in CIRCUITS];
+% Output format
+output ["\(w) \(h)\n\(n)\n"] ++ ["\(x[i]) \(y[i]) \(pos_x[i]) \(pos_y[i])\n" | i in 1..n];

@@ -1,30 +1,33 @@
 import os
-from time import time
 import subprocess
+import time
 
-def solve(cores, model, input, output_dir):
-    command = f'minizinc --solver Geocode -p {cores} -t 3000000 {model} {input}'
+def solve(cores, model, input_file, output_dir):
+    # Construct the Minizinc command with Geocode solver and timeout of 3000000 milliseconds (30 seconds)
+    command = f'minizinc --solver Geocode -p {cores} -t 3000000 {model} {input_file}'
 
-    instance_name = input.split('\\')[-1] if os.name == 'nt' else input.split('/')[-1]
-    instance_name = instance_name[:len(instance_name)-4]
-    output = os.path.join(output_dir, instance_name + '-out.txt')
-    with open(output, 'w+') as f:
-        print(f'{output}:', end='\n', flush=True)
-        start = time()
-        subprocess.run(command.split())
-        passed_time = time()-start
+    # Get the instance name from the input file path
+    instance_name = os.path.basename(input_file)[:-4]  # Remove the extension
+    output_file = os.path.join(output_dir, instance_name + '-out.txt')
+
+    # Run the Minizinc command and capture the output
+    with open(output_file, 'w+') as f:
+        print(f'{output_file}:', end='\n', flush=True)
+        start = time.time()
+        subprocess.run(command.split(), stdout=f, stderr=subprocess.PIPE)
+        passed_time = time.time() - start
         print(f'{passed_time * 1000:.1f} ms')
-        if(passed_time *1000)<300000:
-            subprocess.run(command.split(), stdout=f)
-            f.write('{}'.format(passed_time))
+
+        # Write the elapsed time to the output file
+        f.write('{}'.format(passed_time))
 
 def main():
     cores = 1
     model = 'model.mzn'
-    input = '../instances/ins-21.dzn'
+    input_file = '../instances/ins-21.dzn'
     output_dir = "../out"
 
-    solve(cores,model,input,output_dir)
+    solve(cores, model, input_file, output_dir)
 
 if __name__ == '__main__':
     main()
