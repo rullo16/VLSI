@@ -79,14 +79,15 @@ def bar_chart(result,ins_labels, col_labels, x_label,y_label,title):
 def main():
 
     col_names = ['default','rotation']
-    directories = ["../SMT/out/out_default","../SMT/out/out_rotation"]
+    #directories = ["../SMT/out/out_default","../SMT/out/out_rotation"]
+    directories = ["../CP/out/symmetries_model", "../CP/out/rotation_model"]
     num = 40
 
     results = retrieve_data(directories,num)
     real_res, inst_names = filter_solved_instances(results)
     x_label = "Instance"
     y_label = "Time in seconds"
-    title = "Comparison among different SMT models"
+    title = "Comparison among different CP models"
 
     bar_chart(real_res, inst_names, col_names,x_label,y_label,title)
 
