@@ -57,7 +57,7 @@ def main():
         if args.rotation:
             solve(i+1, ModelType.ROTATION, SolverMinizinc.GECODE, timeout=300, free_search=False)
         else:
-            solve(i+1, ModelType.ROTATION, SolverMinizinc.GECODE, timeout=300, free_search=False)
+            solve(i+1, ModelType.BASE, SolverMinizinc.GECODE, timeout=300, free_search=False)
 
 if __name__ == '__main__':
     main()

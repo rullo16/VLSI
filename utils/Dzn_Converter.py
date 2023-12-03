@@ -1,5 +1,5 @@
-txt_path = "data/instances"
-dzn_path = "CP/instances"
+txt_path = "../data/instances"
+dzn_path = "../CP/instances"
 
 
 for k in range(1, 41):
@@ -12,17 +12,18 @@ for k in range(1, 41):
         w = lines[0]
         n = lines[1]
 
-        x = []
-        y = []
+        circuits = "[|"
 
         for i in range(int(n)):
             split = lines[i + 2].split(' ')
-            x.append(int(split[0]))
-            y.append(int(split[1]))
+            circuits += f" {split[0]}, {split[1]} |\n\t\t\t\t\t\t "
+        
+        circuits = circuits.rstrip()
+        circuits+= "]"
+
 
         with open(output_filename, 'w+') as f_out:
             f_out.write('w = {};\n'.format(w))
             f_out.write('n = {};\n'.format(n))
 
-            f_out.write('x = {};\n'.format(x))
-            f_out.write('y = {};\n'.format(y))
+            f_out.write('circuits = {circuits};\n'.format(circuits=circuits))

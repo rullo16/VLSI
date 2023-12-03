@@ -33,8 +33,8 @@ def CorrectSolution(x: StatusEnum):
     return x in [StatusEnum.OPTIMAL, StatusEnum.FEASIBLE]
 
 class Coords(TypedDict):
-    x: List[int]
-    y: List[int]
+    pos_x: List[int]
+    pos_y: List[int]
 
 class Solution:
     status: StatusEnum
@@ -45,5 +45,5 @@ class Solution:
     height: int
     solve_time: float
     rotation: List[bool] = None
-    Coords: Coords
+    coords: Coords
     configuration: List[str]=None

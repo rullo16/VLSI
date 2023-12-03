@@ -1,6 +1,8 @@
+import os
+from os.path import exists
 import sys
-sys.path.append('../../')
-sys.path.append('./')
+import logging
+sys.path.append('../..')
 from datetime import timedelta
 #from utils.logs import Solution
 from utils.types import CorrectSolution, SolverMinizinc, ModelType, StatusEnum, Solution
@@ -15,46 +17,72 @@ def minizinc_solve_time(result: Result):
         init_time = 0
     return result.statistics["solveTime"].total_seconds() + init_time
 
-def get_minizinc_result(result: Result, instance:Instance, solution: Solution):
+def get_minizinc_result(result: Result, instance:Instance, solution: Solution)->Solution:
     # Get the status of the result
     solution.height = result.objective
-    # inputs
-    solution.circuits = instance.__getitem__("CIRCUITS")
-    solution.n_circuits = instance.__getitem__("N")
-    solution.width = instance.__getitem__("W")
 
-    if hasattr(result.solution, "coord_x") and hasattr(result.solution, "coord_y"):
+    # inputs
+    solution.circuit = instance.__getitem__("circuits")
+    solution.n_circuits = instance.__getitem__("n")
+    solution.width = instance.__getitem__("w")
+
+    if hasattr(result.solution, "pos_x") and hasattr(result.solution, "pos_y"):
         solution.coords = {
-            "x": result.solution.coord_x,
-            "y": result.solution.coord_y
+            "pos_x": result.solution.pos_x,
+            "pos_y": result.solution.pos_y
         }
-    
+    elif hasattr(result.solution, "place"):
+        var_place = result.solution.place
+        positions = result.solution.coords
+        coords = {"x": [None]*solution.n_circuits, "y": [None]*solution.n_circuits}
+
+        for i in range(len(var_place)):
+            nc = var_place[i]
+            for j in range(len(nc)):
+                if nc[j] == 1:
+                    coords["x"][i] = round(positions[j] % solution.width)
+                    coords["y"][i] = round(positions[j] // solution.width)
+        solution.coords = coords
+
     solution.rotation = None if not hasattr(result.solution, "rot") else result.solution.rot
+    
     solution.solve_time = minizinc_solve_time(result)
     return solution
 
-def solve(input_name, model_type, solver: SolverMinizinc=SolverMinizinc.GECODE, timeout=None, free_search=False, heigth=None):
+def solve(input_name, model_type, solver: SolverMinizinc=SolverMinizinc.GECODE, timeout=None, free_search=False, height=None):
 
-    input_file = f'../instances/ins-{input_name}.dzn'
+    input_file = f"../instances/ins-{input_name}.dzn"
+
+    if not exists(input_file):
+        logging.error(f"The file {input_file} doesn't exist, provide a valid one")
+        raise FileNotFoundError
+    else:
+        print(input_file)
     model_file = f'./base.mzn' if model_type == ModelType.BASE else f'./rotation.mzn'
 
-    if heigth is not None:
-        model = Model()
-        model.add_string(f'int: l_bound )= {heigth};')
-        model.add_file(model_file)
-    else:
-        model = Model(model_file)
+    model = Model(model_file)
+    
+    # Add the height parameter if provided
+    if height is not None:
+        model.add_string(f'int: height = {height};')
 
+    # Create a Minizinc Instance
     solver = Solver.lookup(solver.value)
-    instance = Instance(solver, model)
+    instance = Instance(solver,model)
 
-    instance.add_file(input_file, parse_data=True)
+
+    # Add the input file to the instance
+    instance._add_file(input_file,parse_data=True)
+
+    print(instance._data)
+    # Set the timeout for solving if provided
     if timeout:
         td_timeout = timedelta(seconds=timeout)
     else:
         td_timeout = None
 
     try:
+        # Solve the instance
         result = instance.solve(timeout=td_timeout, free_search=free_search)
 
     except MiniZincError as err:
@@ -68,17 +96,19 @@ def solve(input_name, model_type, solver: SolverMinizinc=SolverMinizinc.GECODE, 
     solution.input_name = input_name
     solution.solve_time = timeout
 
+    print(result.status)
+
     if result.status == Status.SATISFIED:
         solution.status = StatusEnum.FEASIBLE
-    if result.status == Status.OPTIMAL_SOLUTION:
+    elif result.status == Status.OPTIMAL_SOLUTION:
         solution.status = StatusEnum.OPTIMAL
-    if result.status == Status.UNSATISFIABLE:
+    elif result.status == Status.UNSATISFIABLE:
         solution.status = StatusEnum.INFEASIBLE
-    if result.status == Status.UNKNOWN:
+    elif result.status == Status.UNKNOWN:
         solution.status = StatusEnum.NO_SOLUTION
-    if result.status == Status.ERROR:
+    elif result.status == Status.ERROR:
         solution.status = StatusEnum.ERROR
-    if result.status == Status.UNBOUNDED:
+    elif result.status == Status.UNBOUNDED:
         solution.status = StatusEnum.UNBOUNDED
     else:
         raise BaseException("Unknown status")
