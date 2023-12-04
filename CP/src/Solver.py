@@ -18,6 +18,7 @@ def minizinc_solve_time(result: Result):
     return result.statistics["solveTime"].total_seconds() + init_time
 
 def get_minizinc_result(result: Result, instance:Instance, solution: Solution)->Solution:
+    
     # Get the status of the result
     solution.height = result.objective
 
@@ -47,6 +48,7 @@ def get_minizinc_result(result: Result, instance:Instance, solution: Solution)->
     solution.rotation = None if not hasattr(result.solution, "rot") else result.solution.rot
     
     solution.solve_time = minizinc_solve_time(result)
+
     return solution
 
 def solve(input_name, model_type, solver: SolverMinizinc=SolverMinizinc.GECODE, timeout=None, free_search=False, height=None):
@@ -56,8 +58,7 @@ def solve(input_name, model_type, solver: SolverMinizinc=SolverMinizinc.GECODE, 
     if not exists(input_file):
         logging.error(f"The file {input_file} doesn't exist, provide a valid one")
         raise FileNotFoundError
-    else:
-        print(input_file)
+    
     model_file = f'./base.mzn' if model_type == ModelType.BASE else f'./rotation.mzn'
 
     model = Model(model_file)
@@ -114,7 +115,7 @@ def solve(input_name, model_type, solver: SolverMinizinc=SolverMinizinc.GECODE, 
         raise BaseException("Unknown status")
     
     if CorrectSolution(solution.status):
-        solution = get_minizinc_result(result, instance, solution)
+        return get_minizinc_result(result, instance, solution)
     else:
         return solution
 
