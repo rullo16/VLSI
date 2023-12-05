@@ -27,8 +27,8 @@ def print_log(solution: Solution):
         for i in range(solution.n_circuits):
             print(
                 (
-                    f"{solution.circuit[i][1] if solution.rotation and solution.rotation[i] else solution.circuit[i][0]} \
-                        {solution.circuit[i][0] if solution.rotation and solution.rotation[i] else solution.circuit[i][1]}, "
+                    f"{solution.circuits[i][1] if solution.rotation and solution.rotation[i] else solution.circuits[i][0]} \
+                        {solution.circuits[i][0] if solution.rotation and solution.rotation[i] else solution.circuits[i][1]}, "
                     f"{solution.coords['pos_x'][i]} {solution.coords['pos_y'][i]}"
                 )
             )
@@ -40,8 +40,8 @@ def save_solution(out_path, model, file_name, data):
     w = data.width
     l = data.height
     n = data.n_circuits
-    x = [data.circuit[i][0] for i in range(n)]
-    y = [data.circuit[i][1] for i in range(n)]
+    x = [data.circuits[i][0] for i in range(n)]
+    y = [data.circuits[i][1] for i in range(n)]
     pos_x = data.coords["pos_x"] if hasattr(data, "coords") else [-1 for i in range(n)]
     pos_y = data.coords["pos_y"] if hasattr(data, "coords") else [-1 for i in range(n)]
 

@@ -23,7 +23,7 @@ def get_minizinc_result(result: Result, instance:Instance, solution: Solution)->
     solution.height = result.objective
 
     # inputs
-    solution.circuit = instance.__getitem__("circuits")
+    solution.circuits = instance.__getitem__("circuits")
     solution.n_circuits = instance.__getitem__("n")
     solution.width = instance.__getitem__("w")
 
