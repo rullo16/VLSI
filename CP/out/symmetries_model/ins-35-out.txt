@@ -1,4 +1,0 @@
-minizinc: MiniZinc driver.
-Usage: minizinc  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...] or just <flat>.fzn
-More info with "/snap/minizinc/781/bin/minizinc --help"
-0.017716646194458008
