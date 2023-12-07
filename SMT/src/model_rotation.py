@@ -16,7 +16,7 @@ def write_output(w, n, x, y, pos_x, pos_y, rotation, length, output_file, elapse
             out_file.write('{} {} {} {}\n'.format(x[i], y[i], pos_x[i], pos_y[i]))
         out_file.write('{}'.format(elapsed_time))
 
-def solve_instance(input_file, output_dir):
+def solver(input_file, output_dir):
     # Extract instance name from the input file path
     instance_name = os.path.splitext(os.path.basename(input_file))[0]
     output_file = os.path.join(output_dir, instance_name + '-out.txt')

@@ -47,7 +47,7 @@ def main():
     # Set input and output directories from arguments or default values
     input_dir = args.in_dir if args.in_dir is not None else default_input_dir
     output_dir = args.out_dir if args.out_dir is not None else out_path
-    solver = SolverMinizinc[args.solver] if args.solver is not None else SolverMinizinc.GECODE
+    solver = SolverMinizinc[args.solver] if args.solver is not None else SolverMinizinc.CHUFFED
 
 
     # Loop through all input files in the input directory
@@ -58,16 +58,16 @@ def main():
         if args.rotation:
             solution = solve(i+1, ModelType.ROTATION, solver, timeout=300, free_search=False)
             print_log(solution)
-            if CorrectSolution(solution.status):
-                save_solution(output_dir, "rotation", input_file, solution)
-            plot_solution(solution, out_plot_path.format(model="rotation", file=input_file))
+            #if CorrectSolution(solution.status):
+            #    save_solution(output_dir, "rotation", input_file, solution)
+            #plot_solution(solution, out_plot_path.format(model="rotation", file=input_file))
             save_statistics(out_stats_path.format(model="rotation", file=solver), solution)
         else:
             solution = solve(i+1, ModelType.BASE, solver, timeout=300, free_search=False)
             print_log(solution)
-            if CorrectSolution(solution.status):
-                save_solution(output_dir, "base", input_file, solution)
-            plot_solution(solution, out_plot_path.format(model="base", file=input_file))
+            #if CorrectSolution(solution.status):
+            #    save_solution(output_dir, "base", input_file, solution)
+            #plot_solution(solution, out_plot_path.format(model="base", file=input_file))
             save_statistics(out_stats_path.format(model="base", file=solver), solution)
 if __name__ == '__main__':
     main()
