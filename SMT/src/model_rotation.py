@@ -120,7 +120,7 @@ def solver(input_file, output_dir):
 def main():
     input_file = "../../data/instances/ins-8.txt"
     output_dir = "../out/out_rotation"
-    solve_instance(input_file, output_dir)
+    solver(input_file, output_dir)
 
 if __name__ == '__main__':
     main()
