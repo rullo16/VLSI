@@ -4,6 +4,8 @@ import time
 from itertools import combinations
 import numpy as np
 
+from utils.types_SMT import CorrectSolution, Solution, StatusEnum
+
 def compute_length(x, y, w):
     # Compute the maximum length based on x, y, and w
     max_l = sum(y)
@@ -50,14 +52,96 @@ def z3_cumulative(start, duration, resources, total):
 
 def write_output(w, n, x, y, pos_x, pos_y, length, output_file, elapsed_time):
     # Write the solution output to a file
-    with open(output_file, 'w+') as out_file:
-        out_file.write('{} {}\n'.format(w, length))
-        out_file.write('{}\n'.format(n))
+    solution = Solution()
+    solution.input_name = output_file
+    solution.width = w
+    solution.n_circuits = n
+    solution.circuits = [[x[i], y[i]] for i in range(n)]
+    solution.height = length
+    solution.solve_time = elapsed_time
+    solution.rotation = rotation
+    solution.coords = {
+        "pos_x": pos_x,
+        "pos_y": pos_y
+    }
+    solution.status = StatusEnum.SMT
+    return solution
 
-        for i in range(n):
-            out_file.write('{} {} {} {}\n'.format(x[i], y[i], pos_x[i], pos_y[i]))
-        out_file.write('{}'.format(elapsed_time))
+def build_model(w, n, x, y, logic="LIA"):
+    l_lower = max(max(y), math.ceil(sum([x[i] * y[i] for i in range(n)]) / w))
+    l_upper = sum(y)
+    lines = []
 
+    # Set logic
+    lines.append(f'(set-logic {logic})')
+
+    # Declare variables
+    lines += [f'(declare-fun pos_x{i} () Int)' for i in range(n)]
+    lines += [f'(declare-fun pos_y{i} () Int)' for i in range(n)]
+    lines += [f'(declare-fun l () Int)']
+
+    # Define the length as the maximum y-coordinate among the circuits
+    lines += [f'(assert (and (>= pos_x{i} 0) (<= pos_x{i}{w-min(x)})))' for i in range(n)]
+    lines += [f'(assert (and (>= pos_y{i} 0) (<= pos_y{i}{l_upper-min(y)})))' for i in range(n)]
+    lines.append(f'(assert (and (>= l {l_lower}) (<= l {l_upper})))')
+
+    # Define non-overlapping constraints
+    for i  in range(n):
+        for j in range(n):
+            if i<j:
+                lines.append(f'(assert (or (<= (+ pos_x{i} {x[i]}) pos_x{j})'
+                             f'(<= (+ pos_y{i} {y[i]}) pos_y{j})'
+                             f'(>= (- pos_x{i} {x[j]}) pos_x{j})'
+                             f'(>= (- pos_y{i} {y[j]}) pos_y{j})))')
+                
+    #Define bounding box constraints
+    lines += [f'(assert (and (<= (+ pos_x{i} {x[i]}) {w})(<= (+ pos_y{i} {y[i]}) l)))' for i in range(n)]
+
+    #Define cumulative constraints
+    for yi in y:
+        sum_var = [f'(ite (and (<= pos_y{i} {yi}) (< {yi} (+ pos_y{i} {y[i]}))) {y[i]} 0)' for i in range(n)]
+        lines.append(f'(assert (<= (+ {" ".join(sum_var)}) {w}))')
+
+    for xi in x:
+        sum_var = [f'(ite (and (<= pos_x{i} {xi}) (< {xi} (+ pos_x{i} {x[i]}))) {x[i]} 0)' for i in range(n)]
+        lines.append(f'(assert (<= (+ {" ".join(sum_var)}) l))')
+
+    # Define symmetry constraints
+    for i in range(n):
+        for j in range(n):
+            if i<j:
+                lines.append(f'(assert (ite (and (= {x[i]} {x[j]}) (= {y[i]} {y[j]}))'
+                             f'(and (<= pos_x{i} pos_x{j}) (<= pos_y{i} pos_y{j})) true))')
+
+    #Symmetry breaking for insertion of max area circuit in (0,0)
+    area = [x[i]*y[i] for i in range(n)]
+    max_area = area.index(max(area))
+    lines.append(f'(assert (= pos_x{max_area} 0))')
+    lines.append(f'(assert (= pos_y{max_area} 0))')
+
+    lines.append('(check-sat)')
+    for i in range(n):
+        lines.append(f'(get-value (pos_x{i}))')
+        lines.append(f'(get-value (pos_y{i}))')
+    lines.append('(get-value (l))')
+
+    return l_lower, l_upper
+
+
+def solve(solver, model_type):
+    solution = {'solution':{}, 'l_var':None}
+
+    res = solver.solve()
+    if not res:
+        print("Unsat, search interrupted")
+        return None
+    
+    last_model = solver.get_model()
+    var_list = [v[0] for v in last_model]
+    l_ind = [str(v) for v in var_list].index('l')
+    l_var = var_list[l_ind]
+    l, pos_x, pos_y, rot =  last_model[l_ind], [], [], []
+    solution['solution'] = {}
 def solver(input_file, output_dir):
     instance_name = os.path.splitext(os.path.basename(input_file))[0]
     output_file = os.path.join(output_dir, instance_name + '-out.txt')

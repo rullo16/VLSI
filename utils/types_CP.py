@@ -12,15 +12,7 @@ class SolverMinizinc(Enum):
     GECODE: str = "gecode"
     CHUFFED: str = "chuffed"
     CPLEX: str = "cplex"
-
-class SolverSMT(Enum):
-    Z3: str = "z3"
-    CVC4: str = "cvc4"
-
-class InputMode(Enum):
-    DZN: str = "dzn"
-    TXT: str = "txt"
-
+    
 class StatusEnum(Enum):
     FEASIBLE = 2
     OPTIMAL = 1

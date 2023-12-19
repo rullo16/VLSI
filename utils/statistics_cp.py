@@ -2,7 +2,7 @@ import os
 from typing import List, Tuple, Union
 import pandas as pd
 
-from utils.types import CorrectSolution, Solution, StatusEnum
+from utils.types_CP import CorrectSolution, Solution, StatusEnum
 
 
 def save_statistics(out_path: str, solution:Solution, config=None):

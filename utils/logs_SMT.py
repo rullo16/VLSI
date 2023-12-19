@@ -1,4 +1,4 @@
-from utils.types import Solution, CorrectSolution, StatusEnum
+from utils.types_SMT import Solution, CorrectSolution, StatusEnum
 
 
 CORRECT_MSG="Solution found, but not optimal"
@@ -6,6 +6,7 @@ OPTIMAL_MSG ="Optimal solution found"
 NO_SOLUTION_MSG = "No solution found"
 GENERIC_MSG = "Solution unacceptable"
 ERROR_MSG = "Error"
+SMT_MSG = "SMT solution found"
 
 def print_log(solution: Solution):
     
@@ -17,6 +18,8 @@ def print_log(solution: Solution):
         print(f"{NO_SOLUTION_MSG}")
     elif solution.status == StatusEnum.ERROR:
         print(f"{ERROR_MSG}")
+    elif solution.status == StatusEnum.SMT:
+        print(f"{SMT_MSG}")
     else:
         print(f"{GENERIC_MSG}")
 
