@@ -7,10 +7,10 @@ from Solver import solve
 import logging
 
 from typing import List, Tuple, Union
-from utils.logs import print_log, save_solution
-from utils.types import CorrectSolution, SolverMinizinc, ModelType
+from utils.logs_CP import print_log, save_solution
+from utils.types_CP import CorrectSolution, SolverMinizinc, ModelType
 from utils.display_results import plot_solution
-from utils.statistics import save_statistics
+from utils.statistics_cp import save_statistics
 
 
 def compute_solution(input_name, model_type: ModelType, solver:SolverMinizinc, timeout:int, free_search, verbose):

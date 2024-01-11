@@ -5,7 +5,7 @@ import logging
 sys.path.append('../..')
 from datetime import timedelta
 #from utils.logs import Solution
-from utils.types import CorrectSolution, SolverMinizinc, ModelType, StatusEnum, Solution
+from utils.types_CP import CorrectSolution, SolverMinizinc, ModelType, StatusEnum, Solution
 from minizinc import Instance, Model, Solver, Result, Status, MiniZincError
 
 def minizinc_solve_time(result: Result):

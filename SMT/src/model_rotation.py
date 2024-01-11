@@ -3,23 +3,41 @@ import numpy as np
 import model_main
 import time
 from itertools import combinations
+from utils.types_SMT import CorrectSolution, Solution, StatusEnum
 from z3 import *
 import os
 
 def write_output(w, n, x, y, pos_x, pos_y, rotation, length, output_file, elapsed_time):
-    with open(output_file, 'w+') as out_file:
-        out_file.write('{} {}\n'.format(w, length))
-        out_file.write('{}\n'.format(n))
+    solution = Solution()
+    solution.input_name = output_file
+    solution.width = w
+    solution.n_circuits = n
+    solution.circuits = [[x[i], y[i]] for i in range(n)]
+    solution.height = length
+    solution.solve_time = elapsed_time
+    solution.rotation = rotation
+    solution.coords = {
+        "pos_x": pos_x,
+        "pos_y": pos_y
+    }
+    solution.status = StatusEnum.SMT
+    return solution
+    
+    
+    # with open(output_file, 'w+') as out_file:
+    #     out_file.write('{} {}\n'.format(w, length))
+    #     out_file.write('{}\n'.format(n))
 
-        for i in range(n):
-            rotated = "rotated" if rotation else ""
-            out_file.write('{} {} {} {}\n'.format(x[i], y[i], pos_x[i], pos_y[i]))
-        out_file.write('{}'.format(elapsed_time))
+    #     for i in range(n):
+    #         rotated = "rotated" if rotation else ""
+    #         out_file.write('{} {} {} {}\n'.format(x[i], y[i], pos_x[i], pos_y[i]))
+    #     out_file.write('{}'.format(elapsed_time))
 
 def solver(input_file, output_dir):
+    solution = Solution()
     # Extract instance name from the input file path
     instance_name = os.path.splitext(os.path.basename(input_file))[0]
-    output_file = os.path.join(output_dir, instance_name + '-out.txt')
+    output_file = output_dir#os.path.join(output_dir, instance_name + '-out.txt')
 
     # Load instance data
     w, n, x, y, max_l, w_mag = model_main.open_data(input_file)
@@ -106,8 +124,8 @@ def solver(input_file, output_dir):
             else:
                 r.append(False)
         solution_len = model.evaluate(length).as_string()
-
-        write_output(w, n, x, y, p_x, p_y, r, solution_len, output_file, elapsed_time)
+        
+        return write_output(w, n, x, y, p_x, p_y, r, solution_len, output_file, elapsed_time)
     elif optimizer.reason_unknown() == "timeout":
         elapsed_time = time.time() - starting_time
         print(f'{elapsed_time * 1000:.1f} ms')
@@ -120,7 +138,7 @@ def solver(input_file, output_dir):
 def main():
     input_file = "../../data/instances/ins-8.txt"
     output_dir = "../out/out_rotation"
-    solver(input_file, output_dir)
+    solution = solver(input_file, output_dir)
 
 if __name__ == '__main__':
     main()
