@@ -130,13 +130,3 @@ def solverSAT(problem_number,instance_dir,out_dir, plot=False):
     return None,None,None,None,None,None,None,None
 
 
-def main():
-    problem_number = 3
-    in_dir = "SAT\instances"
-    out_dir = "SAT\out"
-    plot = True
-    solverSAT(problem_number,in_dir, out_dir,plot)
-
-
-if __name__ == '__main__':
-    main()
