@@ -7,7 +7,7 @@ from timeit import default_timer as timer
 from tqdm import tqdm
 import time as system_time
 import os
-from utils import *
+from utils_sat import *
 import re
 from matplotlib import patches
 from matplotlib.patches import Rectangle
