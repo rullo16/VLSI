@@ -35,13 +35,13 @@ def solverSAT(problem_number,instance_dir,out_dir, plot=False):
 
 
         # CONSTRAINTS
-        # C1 - Each circuit is placed exactly once
-        for i in tqdm(range(h), desc='Constraint 1: exactly one circuit positioning', leave=False):
+        # C1 - Unique Circuit Placement
+        for i in tqdm(range(h), desc='Constraint 1: Unique Circuit Placement', leave=False):
             for j in range(w):
                 solver.add(exactly_one([cells[i][j][k] for k in range(n)]))
 
-        # C2 - Boundary and Non-overlapping Constraints
-        for k in range(n):
+        # C2 - Valid Circuit Positioning
+        for k in tqdm(range(n), desc='Constraint 2: Valid Circuit Positioning', leave=False):
             possible_positions = []
             for i in range(h):
                 for j in range(w):
@@ -58,7 +58,7 @@ def solverSAT(problem_number,instance_dir,out_dir, plot=False):
                         possible_positions.append(And(rotated_pos, rotated[k]))
             solver.add(Or(possible_positions))
 
-        # C3 - positioning the highest circuit in the left-bottom corner
+        # C3 - Priority Placement for Largest Circuit
         max_y = np.argmax(chips_h)
         for i in tqdm(range(chips_h[max_y]), desc='Constraint 3: set largest circuit first', leave=False):
             for j in range(chips_w[max_y]):
