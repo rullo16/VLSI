@@ -1,4 +1,5 @@
 import numpy as np
+from typing import List, Tuple
 import matplotlib.pyplot as plt
 from z3 import *
 from itertools import combinations
@@ -12,24 +13,32 @@ import random
 import os
 import re
 
-def load_file(instance_name):
-    f = open(instance_name,'r')
-    lines = f.readlines()
+def load_file(instance_name: str) -> tuple:
+    """
+    Reads data from a file and processes it to extract relevant information.
+
+    Args:
+        instance_name (str): The name of the file to be loaded.
+
+    Returns:
+        tuple: A tuple containing the width, number of circuits, chip widths, chip heights, circuits, minimum height, and maximum height.
+    """
+
+    with open(instance_name, 'r') as f:
+        lines = f.readlines()
+
     w = int(lines[0])
     n = int(lines[1])
+
     circuits = [tuple(map(int, line.split())) for line in lines[2:]]
-    circuits = sorted(circuits, key=lambda x: x[1], reverse=True)
-    chips_w = []
-    chips_h = []
-    for el in circuits:
-        x, y = el
-        chips_w.append(x)
-        chips_h.append(y)
+    circuits.sort(key=lambda x: x[1], reverse=True)
 
-    min_h = sum([chips_w[k] * chips_h[k] for k in range(n)]) // w    # A = w * h => h = A / w
-    max_h = sum(chips_h)   # chips placed on top of each other
+    chips_w, chips_h = zip(*circuits)
 
-    return w, n ,chips_w, chips_h,circuits, min_h, max_h
+    min_h = sum(w * h for w, h in circuits) // w
+    max_h = sum(chips_h)
+
+    return w, n, list(chips_w), list(chips_h), circuits, min_h, max_h
 
 
 def at_least_one(bool_vars):
@@ -42,66 +51,87 @@ def exactly_one(bool_vars):
     return at_most_one(bool_vars) + [at_least_one(bool_vars)]
 
 
-# function needed to display a solution of the 2D-OSPP problem
-def plot_solution_without_rotation(circuits_pos, chips_w, chips_h, w, h):
+def plot_solution_without_rotation(circuits_pos, chips_w, chips_h, w, h) -> None:
+    """
+    Plot the solution for a circuit layout problem without considering rotation of the circuits.
+
+    Args:
+    - circuits_pos: A list of tuples representing the positions of the circuits on the layout.
+    - chips_w: A list of integers representing the widths of the circuits.
+    - chips_h: A list of integers representing the heights of the circuits.
+    - w: An integer representing the width of the layout.
+    - h: An integer representing the height of the layout.
+
+    Returns:
+    None
+    """
     fig, ax = plt.subplots(figsize=(7, 7))
 
     offset = 1
-    plt.xlim([-offset, w + offset])
-    plt.ylim([-offset, h + offset])
-    plt.xticks(range(-offset, w + offset + 1))
-    plt.yticks(range(-offset, h + offset + 1))
+    ax.set_xlim([-offset, w + offset])
+    ax.set_ylim([-offset, h + offset])
+    ax.set_xticks(range(-offset, w + offset + 1))
+    ax.set_yticks(range(-offset, h + offset + 1))
     ax.set_aspect('equal')
-    for i in range(0, len(circuits_pos)):
-        ax.add_patch(Rectangle(circuits_pos[i], chips_w[i], chips_h[i], 
-                                   color = [random.random(),
-                                            random.random(),
-                                            random.random()], edgecolor='black', linewidth=1))
+    for pos, width, height in zip(circuits_pos, chips_w, chips_h):
+        ax.add_patch(Rectangle(pos, width, height, color=[random.random(), random.random(), random.random()], edgecolor='black', linewidth=1))
 
     ax.add_patch(Rectangle((0, 0), w, h, fill=False, edgecolor='black', linewidth=2))
 
-    # Punti di inizio dei circuiti
     for x, y in circuits_pos:
-        plt.scatter(x, y, color='black', edgecolors='black', s=20)
+        ax.scatter(x, y, color='black', edgecolors='black', s=20)
 
     plt.show()
 
-def plot_solution(circuits_pos, chips_w, chips_h, w, h, rot_sol):
+def plot_solution(circuits_pos, chips_w, chips_h, w, h, rot_sol: List[bool]) -> None:
+    """
+    Plot the solution for a circuit layout problem.
+
+    Args:
+        circuits_pos: A list of tuples representing the positions of the circuits on the layout.
+        chips_w: A list of integers representing the widths of the circuits.
+        chips_h: A list of integers representing the heights of the circuits.
+        w: An integer representing the width of the layout.
+        h: An integer representing the height of the layout.
+        rot_sol: A list of booleans indicating whether each circuit should be rotated or not.
+
+    Returns:
+        None
+    """
     fig, ax = plt.subplots(figsize=(7, 7))
-    
     offset = 1
-    plt.xlim([-offset, w + offset])
-    plt.ylim([-offset, h + offset])
-    plt.xticks(range(-offset, w + offset + 1))
-    plt.yticks(range(-offset, h + offset + 1))
+    ax.set_xlim([-offset, w + offset])
+    ax.set_ylim([-offset, h + offset])
+    ax.set_xticks(range(-offset, w + offset + 1))
+    ax.set_yticks(range(-offset, h + offset + 1))
     ax.set_aspect('equal')
 
-    # Disegna ogni circuito
     for i, (x, y) in enumerate(circuits_pos):
-        # Se il circuito è ruotato, scambia larghezza e altezza
-        width = chips_h[i] if rot_sol[i] else chips_w[i]
-        height = chips_w[i] if rot_sol[i] else chips_h[i]
+        width, height = (chips_h[i], chips_w[i]) if rot_sol[i] else (chips_w[i], chips_h[i])
 
-        ax.add_patch(Rectangle((x, y), width, height,
-                               color=[random.random(), random.random(), random.random()],
-                               linewidth=1))
+        ax.add_patch(Rectangle((x, y), width, height, color=[random.random(), random.random(), random.random()], linewidth=1))
+        if rot_sol[i]:
+            center_x = x + width / 2
+            center_y = y + height / 2
+            ax.text(center_x, center_y, "R", fontsize=15, color="black", ha="center", va="center")
 
-    # Contorno della piastra
     ax.add_patch(Rectangle((0, 0), w, h, fill=False, edgecolor='black', linewidth=2))
 
-    # Punti di inizio dei circuiti
     for x, y in circuits_pos:
-        plt.scatter(x, y, color='black', edgecolors='black', s=20)
+        ax.scatter(x, y, color='black', edgecolors='black', s=20)
 
     plt.show()
 
 def find_identical_circuits_with_count(chips_w, chips_h):
     """
-    Trova gruppi di circuiti identici basati sulle loro dimensioni e conta il numero di circuiti in ogni gruppo.
-
-    :param chips_w: Lista delle larghezze dei circuiti.
-    :param chips_h: Lista delle altezze dei circuiti.
-    :return: Un dizionario dove la chiave è una tupla (larghezza, altezza) e il valore è un'altra tupla (lista degli indici dei circuiti identici, conteggio dei circuiti).
+    Finds groups of identical circuits based on their dimensions and counts the number of circuits in each group.
+    
+    Args:
+        chips_w: List of circuit widths.
+        chips_h: List of circuit heights.
+    
+    Return: 
+        dictionary: a dictionary where the keys are tuples representing the dimensions of identical circuits and the values are tuples containing the list of indices of identical circuits and the count of circuits in each group.
     """
     circuit_dimensions = {}
     for idx, (w, h) in enumerate(zip(chips_w, chips_h)):
@@ -110,37 +140,56 @@ def find_identical_circuits_with_count(chips_w, chips_h):
         else:
             circuit_dimensions[(w, h)] = [idx]
 
-    # Crea un dizionario che include anche il conteggio dei circuiti in ogni gruppo
     identical_circuits_with_count = {dims: (indices, len(indices)) for dims, indices in circuit_dimensions.items() if len(indices) > 1}
     return identical_circuits_with_count
 
-def write_file(w, n, x, y, circuits_pos, rot_sol, length, elapsed_time,  out_file):
+def write_file(w: int, n: int, x: List[int], y: List[int], circuits_pos: List[Tuple[int, int]], rot_sol: List[bool], length: int, elapsed_time: float, out_file: str) -> None:
+    """
+    This function writes the given data to a file in a specific format.
+
+    Args:
+        w (int): The value of `w` to be written to the file.
+        n (int): The value of `n` to be written to the file.
+        x (List[int]): The list of `x` values to be written to the file.
+        y (List[int]): The list of `y` values to be written to the file.
+        circuits_pos (List[Tuple[int, int]]): The list of circuit positions to be written to the file.
+        rot_sol (List[bool]): The list of rotation solutions to be written to the file.
+        length (int): The value of `length` to be written to the file.
+        elapsed_time (float): The value of `elapsed_time` to be written to the file.
+        out_file (str): The name of the output file.
+
+    Returns:
+        None. The function writes the data to the specified output file.
+    """
     with open(out_file, 'w+') as f_out:
-        f_out.write('{} {}\n'.format(w, length))
-        f_out.write('{}\n'.format(n))
+        f_out.write(f'{w} {length}\n')
+        f_out.write(f'{n}\n')
 
-        for i in range(n):
-            is_rotated = "Rot" if rot_sol[i] else "NoRot"
-            p_x,p_y = circuits_pos[i]
-            f_out.write('{} {} {} {} {}\n'.format(x[i], y[i], p_x, p_y, is_rotated))
-        f_out.write(f'{elapsed_time :.2f}' + 'sec')
-
-def write_file(w, n, x, y, circuits_pos, rot_sol, length, elapsed_time, out_file):
-    with open(out_file, 'w+') as f_out:
-        f_out.write('{} {}\n'.format(w, length))
-        f_out.write('{}\n'.format(n))
-
-        circuit_lines = ['{} {} {} {} {}\n'.format(x[i], y[i], *circuits_pos[i], "Rot" if rot_sol[i] else "NoRot") for i in range(n)]
+        circuit_lines = [f'{x[i]} {y[i]} {circuits_pos[i][0]} {circuits_pos[i][1]} {"Rot" if rot_sol[i] else "NoRot"}\n' for i in range(n)]
         f_out.writelines(circuit_lines)
 
-        f_out.write(f'{elapsed_time :.2f}' + 'sec')
+        f_out.write(f'{elapsed_time:.2f}sec')
 
-def model_to_coordinates(model, p, w, l, n, r=None):
-    # Create solution array
-    solution = np.array([[[is_true(model[p[i][j][k]]) for k in range(n)] for j in range(w)] for i in range(l)])
+def model_to_coordinates(model, p, w, l, n, r=None) -> tuple:
+    """
+    Converts a model into coordinates.
+
+    Args:
+        model: A model object representing the solution to a problem.
+        p: A 3-dimensional array representing the objects in the problem.
+        w: The width of the problem space.
+        l: The length of the problem space.
+        n: The number of objects in the problem.
+        r (optional): An array representing the rotation status of each object.
+
+    Returns:
+        A tuple containing the minimum x coordinates for each object, the minimum y coordinates for each object,
+        and the rotation status for each object.
+    """
+    solution = np.array([[[bool(model[p[i][j][k]]) for k in range(n)] for j in range(w)] for i in range(l)])
     p_x_sol = []
     p_y_sol = []
-    rot_sol = [False for i in range(n)]
+    rot_sol = [False for _ in range(n)]
 
     for k in range(n):
         y_ids, x_ids = np.nonzero(solution[:, :, k])
@@ -149,13 +198,24 @@ def model_to_coordinates(model, p, w, l, n, r=None):
         p_x_sol.append(x)
         p_y_sol.append(y)
         if r is not None:
-            rot_sol[k] = is_true(model[r[k]])
+            rot_sol[k] = bool(model[r[k]])
     return p_x_sol, p_y_sol, rot_sol
 
 
-def print_circuit_info(circuits_pos, circuits,rot_sol,rotation=False):
-    for k in range(len(circuits)):
-        width, height = circuits[k]
+def print_circuit_info(circuits_pos, circuits,rot_sol:List[bool],rotation:bool=False) -> None:
+    """
+    Prints information about circuits.
+
+    Args:
+        circuits_pos (list of tuples): The positions of the circuits in the format `(x, y)`.
+        circuits (list of tuples): The dimensions of the circuits in the format `(width, height)`.
+        rot_sol (list of booleans): The rotation solution for each circuit.
+        rotation (boolean, optional): Flag indicating whether to print the rotation status of each circuit. Defaults to False.
+
+    Returns:
+        None: The function only prints the circuit information.
+    """
+    for k, (width, height) in enumerate(circuits):
         x, y = circuits_pos[k]
         if rotation:
             rotation_status = "T" if rot_sol[k] else "F"

@@ -1,10 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from z3 import *
-from itertools import combinations
 from timeit import default_timer as timer
 from tqdm import tqdm
-import time as system_time
 import os
 import warnings
 warnings.filterwarnings('ignore')
@@ -13,7 +11,27 @@ import re
 
 
 def solverSAT(problem_number: int,instance_dir:str,out_dir:str, plot:bool=False):
+    """
+    Solves a circuit placement problem using the Z3 solver.
+    Rotation Allowed.
 
+    Args:
+        problem_number (int): The number of the problem instance to solve.
+        instance_dir (str): The directory where the problem instances are stored.
+        out_dir (str): The directory where the output files will be written.
+        plot (bool, optional): Flag indicating whether to plot the solution. Default is False.
+
+    Returns:
+        
+        - w (int): Width of the circuit placement.
+        - h (int): Height of the circuit placement.
+        - circuits_pos (list): List of circuit positions.
+        - rot_sol (list): List of circuit rotation states.
+        - chips_w (list): List of circuit widths.
+        - chips_h (list): List of circuit heights.
+        - n (int): Number of circuits.
+        - elapsed_time (float): Time taken to find the solution.
+    """
     instance_file = os.path.join(instance_dir, f'ins-{problem_number}' + '.txt')
     instance_filename = f'ins-{problem_number}'
     out_file = os.path.join(out_dir,instance_filename + '-rot-out.txt')
@@ -21,8 +39,8 @@ def solverSAT(problem_number: int,instance_dir:str,out_dir:str, plot:bool=False)
 
     w, n, chips_w, chips_h, circuits, min_h, max_h = load_file(instance_file)
      
-
-    for h in range(min_h, max_h):
+    h = min_h
+    while True:
         # Initialize variables
         cells = [[[Bool(f"cell_{i}_{j}_{k}") for k in range(n)] for j in range(w)] for i in range(h)]
         
@@ -32,7 +50,7 @@ def solverSAT(problem_number: int,instance_dir:str,out_dir:str, plot:bool=False)
         print("current h: ", h)
         
         solver = Solver()
-        start_time = system_time.time()
+        start_time = timer()
 
 
         # CONSTRAINTS
@@ -84,7 +102,7 @@ def solverSAT(problem_number: int,instance_dir:str,out_dir:str, plot:bool=False)
 
         outcome = solver.check()
         if outcome == sat:
-            elapsed_time = system_time.time() - start_time
+            elapsed_time = timer() - start_time
             print("SATISFIABLE in {:.2f} seconds".format(elapsed_time))
             m = solver.model()
             p_x_sol, p_y_sol, rot_sol = model_to_coordinates(m,cells, w, h, n,rotated)
@@ -97,7 +115,9 @@ def solverSAT(problem_number: int,instance_dir:str,out_dir:str, plot:bool=False)
             return (w, h, circuits_pos, rot_sol, chips_w, chips_h, n, system_time.time() - start_time)
         else:
             print("UNSATISFIABLE or TIMEOUT")
-            break
+            h += 1
+            if h > max_h:
+                break
 
     print("Execution completed or timeout reached")
     return None, None, None, None, None, None, None, None
