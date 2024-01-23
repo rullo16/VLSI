@@ -120,9 +120,19 @@ def write_file(w, n, x, y, circuits_pos, rot_sol, length, elapsed_time,  out_fil
         f_out.write('{}\n'.format(n))
 
         for i in range(n):
-            is_rotated = "1" if rot_sol[i] else "0"
+            is_rotated = "Rot" if rot_sol[i] else "NoRot"
             p_x,p_y = circuits_pos[i]
             f_out.write('{} {} {} {} {}\n'.format(x[i], y[i], p_x, p_y, is_rotated))
+        f_out.write(f'{elapsed_time :.2f}' + 'sec')
+
+def write_file(w, n, x, y, circuits_pos, rot_sol, length, elapsed_time, out_file):
+    with open(out_file, 'w+') as f_out:
+        f_out.write('{} {}\n'.format(w, length))
+        f_out.write('{}\n'.format(n))
+
+        circuit_lines = ['{} {} {} {} {}\n'.format(x[i], y[i], *circuits_pos[i], "Rot" if rot_sol[i] else "NoRot") for i in range(n)]
+        f_out.writelines(circuit_lines)
+
         f_out.write(f'{elapsed_time :.2f}' + 'sec')
 
 def model_to_coordinates(model, p, w, l, n, r=None):

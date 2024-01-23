@@ -1,11 +1,11 @@
 12 12
 8
-3 9 0 3 NoRot
+3 9 0 0 NoRot
 3 8 6 0 NoRot
 3 7 9 0 NoRot
-3 6 3 3 NoRot
+3 6 3 0 NoRot
 3 5 9 7 NoRot
 3 4 6 8 NoRot
-3 3 3 9 NoRot
-6 3 0 0 NoRot
-1.00sec
+3 3 0 9 Rot
+6 3 3 6 Rot
+1.89sec

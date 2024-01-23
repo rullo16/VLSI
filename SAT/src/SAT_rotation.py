@@ -12,7 +12,7 @@ from utils_sat import *
 import re
 
 
-def solverSAT(problem_number,instance_dir,out_dir, plot=False):
+def solverSAT(problem_number: int,instance_dir:str,out_dir:str, plot:bool=False):
 
     instance_file = os.path.join(instance_dir, f'ins-{problem_number}' + '.txt')
     instance_filename = f'ins-{problem_number}'
@@ -20,7 +20,8 @@ def solverSAT(problem_number,instance_dir,out_dir, plot=False):
     print('INSTANCE-' + str(problem_number))
 
     w, n, chips_w, chips_h, circuits, min_h, max_h = load_file(instance_file)
-    
+     
+
     for h in range(min_h, max_h):
         # Initialize variables
         cells = [[[Bool(f"cell_{i}_{j}_{k}") for k in range(n)] for j in range(w)] for i in range(h)]
@@ -41,32 +42,37 @@ def solverSAT(problem_number,instance_dir,out_dir, plot=False):
                 solver.add(exactly_one([cells[i][j][k] for k in range(n)]))
 
         # C2 - Valid Circuit Positioning
+        
         for k in tqdm(range(n), desc='Constraint 2: Valid Circuit Positioning', leave=False):
             possible_positions = []
             for i in range(h):
                 for j in range(w):
-                    # Posizioni per la configurazione non ruotata
-                    if i + chips_h[k] <= h and j + chips_w[k] <= w:
-                        non_rotated = And([cells[i + di][j + dj][k] for di in range(chips_h[k]) for dj in range(chips_w[k])])
-                        # Aggiungi la condizione che il circuito k non sia ruotato
-                        possible_positions.append(And(non_rotated, Not(rotated[k])))
-
                     # Posizioni per la configurazione ruotata
                     if i + chips_w[k] <= h and j + chips_h[k] <= w:
                         rotated_pos = And([cells[i + di][j + dj][k] for di in range(chips_w[k]) for dj in range(chips_h[k])])
                         # Aggiungi la condizione che il circuito k sia ruotato
                         possible_positions.append(And(rotated_pos, rotated[k]))
-            solver.add(Or(possible_positions))
 
+                    # Posizioni per la configurazione non ruotata
+                    if i + chips_h[k] <= h and j + chips_w[k] <= w:
+                        non_rotated = And([cells[i + di][j + dj][k] for di in range(chips_h[k]) for dj in range(chips_w[k])])
+                        # Aggiungi la condizione che il circuito k non sia ruotato
+                        possible_positions.append(And(non_rotated, Not(rotated[k])))
+            solver.add(Or(possible_positions))
+        
+        
         # C3 - Priority Placement for Largest Circuit
-        max_y = np.argmax(chips_h)
-        for i in tqdm(range(chips_h[max_y]), desc='Constraint 3: set largest circuit first', leave=False):
-            for j in range(chips_w[max_y]):
+        
+        areas = [chips_h[i] * chips_w[i] for i in range(n)]  # calculate areas
+        largest_c = np.argmax(areas)  # find the index of the largest area
+        for i in tqdm(range(chips_h[largest_c]), desc='Constraint 3: set largest circuit first', leave=False):
+            for j in range(chips_w[largest_c]):
                 for k in range(n):
-                    if k == max_y:
+                    if k == largest_c:
                         solver.add(cells[i][j][k])
                     else:
                         solver.add(Not(cells[i][j][k]))
+        
 
         # maximum time of execution
         timeout = 300000

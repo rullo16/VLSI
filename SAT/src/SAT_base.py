@@ -28,6 +28,7 @@ def solverSAT(problem_number,instance_dir,out_dir, plot=False):
 
     identical_circuits = find_identical_circuits_with_count(chips_w, chips_h)
     
+    print(chips_h,chips_w,circuits)
 
     for h in range(min_h, max_h):
 
@@ -44,29 +45,14 @@ def solverSAT(problem_number,instance_dir,out_dir, plot=False):
 
         # CONSTRAINTS
 
-        #C1 - Non overlapping
-        '''
-        This constraint restricts the solver to solutions where each cell on the plate is occupied by no more than one circuit.
-        It effectively prevents any two circuits from overlapping in the same cell.
-        '''
+        #C1 - Unique Circuit Placement
+       
         for i in tqdm(range(h), desc='Constraint 1: Unique Circuit Placement', leave=False):
             for j in range(w):
                 solver.add(exactly_one([cells[i][j][k] for k in range(n)]))
 
         #C2 - Valid Circuit Positioning
-        '''
-        * The solver examines each circuit k.
-        * For each circuit k, the solver considers all possible starting positions on the plate where the circuit could be placed.
-        * for x in range(h - chips_h[k] + 1) and for y in range(w - chips_w[k] + 1) iterate over all possible starting positions (x, y) for circuit k on the plate.
-        * h - chips_h[k] + 1 and w - chips_w[k] + 1 ensure that the circuit does not exceed the plate's height (h) and width (w) limits.
-         
-        * For each possible starting position (x, y), the solver creates a condition And([cells[x + i][y + j][k] for j in range(chips_w[k]) for i in range(chips_h[k])]). 
-          This condition checks that all cells that would be occupied by circuit k (given its dimensions chips_w[k] and chips_h[k]) are indeed occupied by that circuit.
-          
-
-        * The solver adds an at_least_one(possible_cells) constraint, ensuring that at least one of the generated conditions for circuit k is true. 
-          In other words, at least one of the potential starting positions must be selected to place circuit k on the plate.
-        '''
+        
         for k in tqdm(range(n), desc='Constraint 2: Valid Circuit Positioning', leave=False):
             possible_cells = []
             for x in range(h - chips_h[k] + 1):
@@ -75,18 +61,19 @@ def solverSAT(problem_number,instance_dir,out_dir, plot=False):
             solver.add(at_least_one(possible_cells))
 
         
-        #C3 - Priority Placement for Largest Circuit
-        max_y = np.argmax(chips_h)
-        for i in tqdm(range(chips_h[max_y]), desc='Constraint 3: set largest circuit first', leave=False):
-            for j in range(chips_w[max_y]):
+        # C3 - Priority Placement for Largest Circuit
+        
+        areas = [chips_h[i] * chips_w[i] for i in range(n)]  # calculate areas
+        largest_c = np.argmax(areas)  # find the index of the largest area
+        for i in tqdm(range(chips_h[largest_c]), desc='Constraint 3: set largest circuit first', leave=False):
+            for j in range(chips_w[largest_c]):
                 for k in range(n):
-                    if k == max_y:
+                    if k == largest_c:
                         solver.add(cells[i][j][k])
                     else:
                         solver.add(Not(cells[i][j][k]))
         
         #C4 - symmetry breaking 
-       
         for _, (indices, count) in tqdm(identical_circuits.items(), desc='Constraint 4: symmetry breaking', leave=False):
             if count > 1:
                 for i in range(1, count):

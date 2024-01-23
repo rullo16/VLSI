@@ -1,0 +1,13 @@
+16 16
+10
+3 12 4 13 Rot
+3 10 10 0 NoRot
+7 9 0 0 NoRot
+3 8 7 0 NoRot
+3 7 13 0 NoRot
+4 7 0 9 Rot
+3 6 13 7 NoRot
+3 5 7 8 NoRot
+3 4 0 13 Rot
+3 3 10 10 NoRot
+4.89sec
