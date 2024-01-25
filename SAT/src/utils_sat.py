@@ -10,8 +10,11 @@ from matplotlib import patches
 from matplotlib.patches import Rectangle
 import matplotlib.colors as colors
 import random
+import seaborn as sns
+import pandas as pd
 import os
 import re
+from sklearn.model_selection import GridSearchCV
 
 def load_file(instance_name: str) -> tuple:
     """
@@ -31,7 +34,7 @@ def load_file(instance_name: str) -> tuple:
     n = int(lines[1])
 
     circuits = [tuple(map(int, line.split())) for line in lines[2:]]
-    circuits.sort(key=lambda x: x[0] * x[1])
+    circuits.sort(key=lambda x: x[0] * x[1], reverse=True)
 
     chips_w, chips_h = zip(*circuits)
 
@@ -40,6 +43,61 @@ def load_file(instance_name: str) -> tuple:
 
     return w, n, list(chips_w), list(chips_h), circuits, min_h, max_h
 
+import numpy as np
+
+def get_report(in_dir):
+    """
+    Reads data from files in a given directory and creates a histogram plot using the data.
+
+    Args:
+        in_dir (str): The path to the directory containing the data files.
+
+    Returns:
+        None. The function generates and displays a histogram plot based on the data read from the files.
+    """
+    instances = []
+    seconds = []
+    rotation = []
+
+    max_instance_num = max(int(filename.split('-')[1]) for filename in os.listdir(in_dir) if filename.startswith("ins-"))
+
+    for instance_num in range(1, max_instance_num + 1):
+        # Check if the file for no rotation exists
+        filename_no_rot = f"ins-{instance_num}-out.txt"
+        if filename_no_rot in os.listdir(in_dir):
+            with open(os.path.join(in_dir, filename_no_rot), 'r') as f:
+                time = float(f.readlines()[-1].strip())
+                seconds.append(time)
+                rotation.append(0)
+                instances.append(instance_num)
+        else:
+            seconds.append(np.nan)
+            rotation.append(np.nan)
+            instances.append(instance_num)
+
+        # Check if the file for rotation exists
+        filename_rot = f"ins-{instance_num}-rot-out.txt"
+        if filename_rot in os.listdir(in_dir):
+            with open(os.path.join(in_dir, filename_rot), 'r') as f:
+                time = float(f.readlines()[-1].strip())
+                seconds.append(time)
+                rotation.append(1)
+                instances.append(instance_num)
+        else:
+            seconds.append(np.nan)
+            rotation.append(np.nan)
+            instances.append(instance_num)
+
+    data_df = pd.DataFrame({
+        'instance': instances,
+        'seconds': seconds,
+        'rotation': rotation
+    })
+
+    data_df['rotation'] = data_df['rotation'].fillna(0).astype(int)
+
+    plot_histograms(data_df)
+        
 
 def at_least_one(bool_vars):
     return Or(bool_vars)
@@ -173,7 +231,7 @@ def write_file(w: int, n: int, x: List[int], y: List[int], circuits_pos: List[Tu
 
         f_out.writelines(circuit_lines)
 
-        f_out.write(f'{elapsed_time:.2f}sec')
+        f_out.write(str(round(elapsed_time,5)))
 
 def model_to_coordinates(model, p, w, l, n, r=None) -> tuple:
     """
@@ -227,4 +285,24 @@ def print_circuit_info(circuits_pos, circuits,rot_sol:List[bool],rotation:bool=F
             print(f"Circuit {k}: Width={width}, Height={height}, X={x}, Y={y}, R={rotation_status}")
         else:
             print(f"Circuit {k}: Width={width}, Height={height}, X={x}, Y={y}")
+
+
+def plot_histograms(data_df):
+    """
+    Generates and displays a histogram plot based on the data provided in a DataFrame.
+
+    Args:
+        data_df (pd.DataFrame): A pandas DataFrame containing the data to be plotted. It should have three columns: 'instance', 'seconds', and 'rotation'.
+
+    Returns:
+        None. The function generates and displays a histogram plot based on the data provided.
+    """
+    plt.figure(figsize=(11, 5))
+    sns.set_theme(style="whitegrid")
+    ax = sns.barplot(x="instance", y="seconds", hue="rotation", data=data_df)
+
+    plt.tight_layout()
+    ax.set_yscale("symlog")
+    ax.set_yticks([0, 1, 10, 100, 300])
+    plt.show()
 

@@ -100,8 +100,10 @@ def solverSAT(problem_number: int, instance_dir: str, out_dir: str, plot: bool =
                     # Ensure that the circuit k at position (i, j) is placed before the circuit at (i, j+1)
                     solver.add(Implies(cells[i][j][k], Or([Not(cells[i][j+1][l]) for l in range(n) if l != k])))
         
-              
-
+        # C6 - Order the circuits
+        for k in range(n - 1):
+            solver.add(Or([And(cells[i][j][k], Not(cells[i][j][k + 1])) for i in range(h) for j in range(w)]))
+ 
         # maximum time of execution
         timeout = 300000
         solver.set("timeout", timeout)
@@ -126,6 +128,7 @@ def solverSAT(problem_number: int, instance_dir: str, out_dir: str, plot: bool =
         else:
             print("UNSATISFIABLE or TIMEOUT")
             h += 1
+            break
 
     print("Execution completed or timeout reached")
     return None, None, None, None, None, None, None, None

@@ -6,8 +6,8 @@ import SAT_base
 import SAT_rotation
 
 
-default_in_dir = "SAT\instances" if os.name == 'nt' else "SAT/instances"
-default_out_dir = "SAT\out" if os.name == 'nt' else "SAT/out"
+default_in_dir = "data\instances" if os.name == 'nt' else "data/instances"
+default_out_dir = "data\out" if os.name == 'nt' else "data/out"
 
 def main():
     
@@ -39,6 +39,9 @@ def main():
                 SAT_rotation.solverSAT(problem_number,in_dir, out_dir,args.plot)
             else:
                 SAT_base.solverSAT(problem_number,in_dir, out_dir,args.plot)
+
+        get_report(out_dir)  
+         
     else:
         problem_number = int(args.all_or_instance)
         if args.rotation:

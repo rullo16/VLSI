@@ -6,4 +6,4 @@
 3 6 7 4 NoRot
 3 7 4 0 NoRot
 4 6 0 0 NoRot
-1.32sec
+1.32
