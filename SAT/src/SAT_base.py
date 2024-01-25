@@ -15,7 +15,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
-def solverSAT(problem_number:int,instance_dir:str,out_dir:str, plot:bool=False):
+def solverSAT(problem_number: int, instance_dir: str, out_dir: str, plot: bool = False):
     """
     Solves a circuit placement problem using the Z3 solver.
     Rotation Not Allowed.
@@ -27,7 +27,6 @@ def solverSAT(problem_number:int,instance_dir:str,out_dir:str, plot:bool=False):
         plot (bool, optional): Flag indicating whether to plot the solution. Default is False.
 
     Returns:
-        
         - w (int): Width of the circuit placement.
         - h (int): Height of the circuit placement.
         - circuits_pos (list): List of circuit positions.
@@ -40,38 +39,33 @@ def solverSAT(problem_number:int,instance_dir:str,out_dir:str, plot:bool=False):
 
     instance_file = os.path.join(instance_dir, f'ins-{problem_number}' + '.txt')
     instance_filename = f'ins-{problem_number}'
-    out_file = os.path.join(out_dir,instance_filename + '-out.txt')
+    out_file = os.path.join(out_dir, instance_filename + '-out.txt')
     print('INSTANCE-' + str(problem_number))
 
     w, n, chips_w, chips_h, circuits, min_h, max_h = load_file(instance_file)
 
     identical_circuits = find_identical_circuits_with_count(chips_w, chips_h)
-    
-    
+      
     h = min_h
-    while True:
+    while h <= max_h:
 
         # VARIABLES
-
         cells = [[[Bool(f"cell_{i}_{j}_{k}") for k in range(n)] for j in range(w)] for i in range(h)]
         print("variables:", n * w * h)
         print("current h: ", h)
-        
-        # SOLVER
 
+        # SOLVER
         solver = Solver()
         start_time = timer()
 
         # CONSTRAINTS
 
-        #C1 - Unique Circuit Placement
-       
+        # C1 - Unique Circuit Placement      
         for i in tqdm(range(h), desc='Constraint 1: Unique Circuit Placement', leave=False):
             for j in range(w):
                 solver.add(exactly_one([cells[i][j][k] for k in range(n)]))
 
-        #C2 - Valid Circuit Positioning
-        
+        # C2 - Valid Circuit Positioning
         for k in tqdm(range(n), desc='Constraint 2: Valid Circuit Positioning', leave=False):
             possible_cells = []
             for x in range(h - chips_h[k] + 1):
@@ -79,11 +73,9 @@ def solverSAT(problem_number:int,instance_dir:str,out_dir:str, plot:bool=False):
                     possible_cells.append(And([cells[x + i][y + j][k] for j in range(chips_w[k]) for i in range(chips_h[k])]))
             solver.add(at_least_one(possible_cells))
 
-        
-        # C3 - Priority Placement for Largest Circuit
-        
-        areas = [chips_h[i] * chips_w[i] for i in range(n)]  # calculate areas
-        largest_c = np.argmax(areas)  # find the index of the largest area
+        # C3 - Priority Placement for Largest Circuit    
+        areas = [chips_h[i] * chips_w[i] for i in range(n)]  
+        largest_c = np.argmax(areas)  
         for i in tqdm(range(chips_h[largest_c]), desc='Constraint 3: set largest circuit first', leave=False):
             for j in range(chips_w[largest_c]):
                 for k in range(n):
@@ -91,50 +83,51 @@ def solverSAT(problem_number:int,instance_dir:str,out_dir:str, plot:bool=False):
                         solver.add(cells[i][j][k])
                     else:
                         solver.add(Not(cells[i][j][k]))
-        
-        #C4 - symmetry breaking 
-        for _, (indices, count) in tqdm(identical_circuits.items(), desc='Constraint 4: symmetry breaking', leave=False):
-            if count > 1:
-                for i in range(1, count):
-                    circuit_idx = indices[i]
-                    previous_circuit_idx = indices[i-1]
-                    for x in range(h):
-                        for y in range(w):
-                            # If the current circuit is placed in (x, y), the previous identical circuit must be placed somewhere before
-                            previous_positions = [cells[prev_x][prev_y][previous_circuit_idx] for prev_x in range(h) for prev_y in range(y)] + \
-                                                 [cells[prev_x][y][previous_circuit_idx] for prev_x in range(x)]
-                            solver.add(Implies(cells[x][y][circuit_idx], Or(previous_positions)))
 
+        # C4 - Non-overlapping Constraint
+        for i in tqdm(range(h), desc='Constraint 4: Non-overlapping Circuits', leave=False):
+            for j in range(w):
+                for k1 in range(n):
+                    for k2 in range(k1+1, n):  # Avoid duplicate pairs
+                        # If circuit k1 is placed at (i, j), circuit k2 cannot be placed at the same position
+                        solver.add(Implies(cells[i][j][k1], Not(cells[i][j][k2])))
+         
         
+        # C5 - Lexicographic Ordering Constraints
+        for i in tqdm(range(h), desc='Constraint 5: Lexicographic Ordering Constraints', leave=False):
+            for j in range(w - 1):
+                for k in range(n):
+                    # Ensure that the circuit k at position (i, j) is placed before the circuit at (i, j+1)
+                    solver.add(Implies(cells[i][j][k], Or([Not(cells[i][j+1][l]) for l in range(n) if l != k])))
+        
+              
+
         # maximum time of execution
         timeout = 300000
         solver.set("timeout", timeout)
 
-
         # Check the solver and process the result
         print('Checking the model...')
-        #RESOLUTION
+        # RESOLUTION
         outcome = solver.check()
-        
+
         if outcome == sat:
             elapsed_time = timer() - start_time
             print("SATISFIABLE in {:.2f} seconds".format(elapsed_time))
             m = solver.model()
             p_x_sol, p_y_sol, rot_sol = model_to_coordinates(m, cells, w, h, n)
             circuits_pos = [(p_x_sol[i], p_y_sol[i]) for i in range(len(p_x_sol))]
-            write_file(w,n,chips_w,chips_h,circuits_pos,rot_sol,h,elapsed_time,out_file)
+            write_file(w, n, chips_w, chips_h, circuits_pos, rot_sol, h, elapsed_time, out_file)
             circuits = list(zip(chips_w, chips_h))
-            print_circuit_info(circuits_pos, circuits,rot_sol)
+            print_circuit_info(circuits_pos, circuits, rot_sol)
             if plot:
-                plot_solution_without_rotation(circuits_pos, chips_w, chips_h,w, h)
-            return (w, h, circuits_pos, rot_sol, chips_w, chips_h, n,circuits, system_time.time() - start_time)
+                plot_solution_without_rotation(circuits_pos, chips_w, chips_h, w, h)
+            return w, h, circuits_pos, rot_sol, chips_w, chips_h, n, circuits, elapsed_time
         else:
-            print("UNSATISFIABLE")
+            print("UNSATISFIABLE or TIMEOUT")
             h += 1
-            if h > max_h:
-                break
 
     print("Execution completed or timeout reached")
-    return None,None,None,None,None,None,None,None
+    return None, None, None, None, None, None, None, None
 
 

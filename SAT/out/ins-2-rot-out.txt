@@ -1,8 +1,8 @@
 9 9
 5
-3 9 0 0 NoRot
+3 3 6 6 Rot
+3 4 3 5 NoRot
+3 5 3 0 NoRot
 3 6 6 0 NoRot
-3 5 3 4 NoRot
-3 4 3 0 NoRot
-3 3 6 6 NoRot
-0.46sec
+3 9 0 0 NoRot
+0.47sec

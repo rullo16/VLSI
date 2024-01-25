@@ -1,0 +1,17 @@
+19 20
+14
+3 3 12 0 Rot
+3 4 0 3 Rot
+3 5 7 17 Rot
+3 6 3 9 Rot
+4 5 7 9 NoRot
+3 7 3 6 Rot
+3 8 9 9 NoRot
+4 6 15 14 NoRot
+3 9 10 6 Rot
+3 10 8 4 NoRot
+4 8 3 3 NoRot
+3 11 7 3 Rot
+3 13 1 0 Rot
+3 19 0 0 NoRot
+39.44sec

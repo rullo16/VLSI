@@ -31,11 +31,11 @@ def load_file(instance_name: str) -> tuple:
     n = int(lines[1])
 
     circuits = [tuple(map(int, line.split())) for line in lines[2:]]
-    circuits.sort(key=lambda x: x[1], reverse=True)
+    circuits.sort(key=lambda x: x[0] * x[1])
 
     chips_w, chips_h = zip(*circuits)
 
-    min_h = sum(w * h for w, h in circuits) // w
+    min_h = sum(w * h for w, h in circuits) // w                
     max_h = sum(chips_h)
 
     return w, n, list(chips_w), list(chips_h), circuits, min_h, max_h
@@ -143,7 +143,7 @@ def find_identical_circuits_with_count(chips_w, chips_h):
     identical_circuits_with_count = {dims: (indices, len(indices)) for dims, indices in circuit_dimensions.items() if len(indices) > 1}
     return identical_circuits_with_count
 
-def write_file(w: int, n: int, x: List[int], y: List[int], circuits_pos: List[Tuple[int, int]], rot_sol: List[bool], length: int, elapsed_time: float, out_file: str) -> None:
+def write_file(w: int, n: int, x: List[int], y: List[int], circuits_pos: List[Tuple[int, int]], rot_sol: List[bool], length: int, elapsed_time: float, out_file: str,r = False) -> None:
     """
     This function writes the given data to a file in a specific format.
 
@@ -157,6 +157,7 @@ def write_file(w: int, n: int, x: List[int], y: List[int], circuits_pos: List[Tu
         length (int): The value of `length` to be written to the file.
         elapsed_time (float): The value of `elapsed_time` to be written to the file.
         out_file (str): The name of the output file.
+        r (boolean, optional): Flag indicating whether to write the rotation status of each circuit. Defaults to False.
 
     Returns:
         None. The function writes the data to the specified output file.
@@ -165,7 +166,11 @@ def write_file(w: int, n: int, x: List[int], y: List[int], circuits_pos: List[Tu
         f_out.write(f'{w} {length}\n')
         f_out.write(f'{n}\n')
 
-        circuit_lines = [f'{x[i]} {y[i]} {circuits_pos[i][0]} {circuits_pos[i][1]} {"Rot" if rot_sol[i] else "NoRot"}\n' for i in range(n)]
+        if r:
+            circuit_lines = [f'{x[i]} {y[i]} {circuits_pos[i][0]} {circuits_pos[i][1]} {"Rot" if rot_sol[i] else "NoRot"}\n' for i in range(n)]
+        else:
+            circuit_lines = [f'{x[i]} {y[i]} {circuits_pos[i][0]} {circuits_pos[i][1]}\n' for i in range(n)]
+
         f_out.writelines(circuit_lines)
 
         f_out.write(f'{elapsed_time:.2f}sec')

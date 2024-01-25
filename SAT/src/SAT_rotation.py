@@ -40,7 +40,7 @@ def solverSAT(problem_number: int,instance_dir:str,out_dir:str, plot:bool=False)
     w, n, chips_w, chips_h, circuits, min_h, max_h = load_file(instance_file)
      
     h = min_h
-    while True:
+    while h <= max_h:
         # Initialize variables
         cells = [[[Bool(f"cell_{i}_{j}_{k}") for k in range(n)] for j in range(w)] for i in range(h)]
         
@@ -91,7 +91,22 @@ def solverSAT(problem_number: int,instance_dir:str,out_dir:str, plot:bool=False)
                     else:
                         solver.add(Not(cells[i][j][k]))
         
+        # C4 - Non-overlapping Constraint
+        for i in tqdm(range(h), desc='Constraint 4: Non-overlapping Circuits', leave=False):
+            for j in range(w):
+                for k1 in range(n):
+                    for k2 in range(k1+1, n):  # Avoid duplicate pairs
+                        # If circuit k1 is placed at (i, j), circuit k2 cannot be placed at the same position
+                        solver.add(Implies(cells[i][j][k1], Not(cells[i][j][k2])))
 
+        # C5 - Lexicographic Ordering Constraints
+        for i in tqdm(range(h), desc='Constraint 5: Lexicographic Ordering Constraints', leave=False):
+            for j in range(w - 1):
+                for k in range(n):
+                    # Ensure that the circuit k at position (i, j) is placed before the circuit at (i, j+1)
+                    solver.add(Implies(cells[i][j][k], Or([Not(cells[i][j+1][l]) for l in range(n) if l != k])))
+
+                    
         # maximum time of execution
         timeout = 300000
         solver.set("timeout", timeout)
@@ -107,17 +122,15 @@ def solverSAT(problem_number: int,instance_dir:str,out_dir:str, plot:bool=False)
             m = solver.model()
             p_x_sol, p_y_sol, rot_sol = model_to_coordinates(m,cells, w, h, n,rotated)
             circuits_pos = [(p_x_sol[i], p_y_sol[i]) for i in range(len(p_x_sol))]
-            write_file(w,n,chips_w,chips_h,circuits_pos,rot_sol,h,elapsed_time,out_file)
+            write_file(w,n,chips_w,chips_h,circuits_pos,rot_sol,h,elapsed_time,out_file,r = True)
             circuits = list(zip(chips_w, chips_h))
             print_circuit_info(circuits_pos, circuits,rot_sol,rotation=True)
             if plot:
                 plot_solution(circuits_pos, chips_w, chips_h,w, h,rot_sol)
-            return (w, h, circuits_pos, rot_sol, chips_w, chips_h, n, system_time.time() - start_time)
+            return (w, h, circuits_pos, rot_sol, chips_w, chips_h, n, elapsed_time)
         else:
             print("UNSATISFIABLE or TIMEOUT")
             h += 1
-            if h > max_h:
-                break
 
     print("Execution completed or timeout reached")
     return None, None, None, None, None, None, None, None
