@@ -18,8 +18,6 @@ def print_log(solution: Solution):
         print(f"{NO_SOLUTION_MSG}")
     elif solution.status == StatusEnum.ERROR:
         print(f"{ERROR_MSG}")
-    elif solution.status == StatusEnum.SMT:
-        print(f"{SMT_MSG}")
     else:
         print(f"{GENERIC_MSG}")
 
