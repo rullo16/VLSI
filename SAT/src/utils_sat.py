@@ -3,7 +3,6 @@ from typing import List, Tuple
 import matplotlib.pyplot as plt
 from z3 import *
 from itertools import combinations
-# from timeit import default_timer as timer
 import time as system_time 
 from tqdm import tqdm
 from matplotlib import patches
@@ -14,7 +13,7 @@ import seaborn as sns
 import pandas as pd
 import os
 import re
-from sklearn.model_selection import GridSearchCV
+
 
 def load_file(instance_name: str) -> tuple:
     """

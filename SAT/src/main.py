@@ -7,7 +7,7 @@ import SAT_rotation
 
 
 default_in_dir = "data\instances" if os.name == 'nt' else "data/instances"
-default_out_dir = "data\out" if os.name == 'nt' else "data/out"
+default_out_dir = "SAT\out" if os.name == 'nt' else "SAT/out"
 
 def main():
     

@@ -15,7 +15,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
-def solverSAT(problem_number: int, instance_dir: str, out_dir: str, plot: bool = False):
+def solverSAT(problem_number: int, instance_dir: str,out_dir = str, plot: bool = False):
     """
     Solves a circuit placement problem using the Z3 solver.
     Rotation Not Allowed.
@@ -39,12 +39,12 @@ def solverSAT(problem_number: int, instance_dir: str, out_dir: str, plot: bool =
 
     instance_file = os.path.join(instance_dir, f'ins-{problem_number}' + '.txt')
     instance_filename = f'ins-{problem_number}'
-    out_file = os.path.join(out_dir, instance_filename + '-out.txt')
+    out_file = os.path.join(out_dir,instance_filename + '-rot-out.txt')
     print('INSTANCE-' + str(problem_number))
 
     w, n, chips_w, chips_h, circuits, min_h, max_h = load_file(instance_file)
 
-    identical_circuits = find_identical_circuits_with_count(chips_w, chips_h)
+
       
     h = min_h
     while h <= max_h:
@@ -93,16 +93,21 @@ def solverSAT(problem_number: int, instance_dir: str, out_dir: str, plot: bool =
                         solver.add(Implies(cells[i][j][k1], Not(cells[i][j][k2])))
          
         
-        # C5 - Lexicographic Ordering Constraints
-        for i in tqdm(range(h), desc='Constraint 5: Lexicographic Ordering Constraints', leave=False):
-            for j in range(w - 1):
-                for k in range(n):
-                    # Ensure that the circuit k at position (i, j) is placed before the circuit at (i, j+1)
-                    solver.add(Implies(cells[i][j][k], Or([Not(cells[i][j+1][l]) for l in range(n) if l != k])))
-        
-        # C6 - Order the circuits
-        for k in range(n - 1):
-            solver.add(Or([And(cells[i][j][k], Not(cells[i][j][k + 1])) for i in range(h) for j in range(w)]))
+        # C5 - Symmetry Breaking Constraint
+        for k1 in tqdm(range(n), desc='Constraint 5: Symmetry Breaking', leave=False):
+            for k2 in range(k1+1, n):  # Avoid duplicate pairs
+                for i in range(h):
+                    for j in range(w):
+                        # If circuit k1 and k2 are at the same y-coordinate, k1 should have smaller or equal x-coordinate
+                        solver.add(Implies(And(cells[i][j][k1], cells[i][j][k2]), Or([cells[i][j_prime][k1] for j_prime in range(j+1)])))
+
+        # C6 - Horizontal Symmetry Breaking Constraint
+        for k1 in tqdm(range(n), desc='Constraint 6: Horizontal Symmetry Breaking', leave=False):
+            for k2 in range(k1+1, n):  # Avoid duplicate pairs
+                for j in range(w):
+                    for i in range(h):
+                        # If circuit k1 and k2 are at the same x-coordinate, k1 should have smaller or equal y-coordinate
+                        solver.add(Implies(And(cells[i][j][k1], cells[i][j][k2]), Or([cells[i_prime][j][k1] for i_prime in range(i+1)])))
  
         # maximum time of execution
         timeout = 300000
@@ -128,7 +133,7 @@ def solverSAT(problem_number: int, instance_dir: str, out_dir: str, plot: bool =
         else:
             print("UNSATISFIABLE or TIMEOUT")
             h += 1
-            break
+            return None
 
     print("Execution completed or timeout reached")
     return None, None, None, None, None, None, None, None
