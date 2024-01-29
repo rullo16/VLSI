@@ -1,7 +1,5 @@
 from z3 import *
 import argparse
-import os
-sys.path.append('../..')
 from glob import glob
 import model_main
 import model_rotation
@@ -39,16 +37,6 @@ def main():
     model = "rotation" if args.rotation else "main"
     print(f'Using {model} model.')
 
-    # Loop through all input files in the input directory and solve each instance
-    # for i, input_file in enumerate(glob(os.path.join(input_dir, '*.txt'))):
-    #     print("Solving instance", i)
-
-    #     # Call the appropriate solver function based on the selected model
-    #     if args.rotation:
-    #         model_rotation.solver(input_file, output_dir)
-    #     else:
-    #         model_main.solver(input_file, output_dir)
-    
     # Loop through all input files in the input directory
     for i, input_file in enumerate(glob(os.path.join(input_dir, '*.txt'))):
         print("Solving instance", i)
@@ -60,16 +48,16 @@ def main():
             if solution:
                 print_log(solution)
                 save_solution(output_dir.format(model="rotation", file=instance_file),ModelType.ROTATION, instance_file, solution)
-                # plot_solution(solution, out_plot_path.format(model="rotation", file=instance_file))
-                #save_statistics(out_stats_path.format(model="rotation", file=solver), solution)
+                plot_solution(solution, out_plot_path.format(model="rotation", file=instance_file))
+                save_statistics(out_stats_path.format(model="rotation", file=solver), solution)
         else:
             solution = model_main.solver(input_file,solver_name=solver)
             print(solution)
             if solution:
                 print_log(solution)
-                save_solution(output_dir.format(model="base", file=instance_file),ModelType.ROTATION, instance_file, solution)
-                # plot_solution(solution, out_plot_path.format(model="rotation", file=instance_file))
-                #save_statistics(out_stats_path.format(model="rotation", file=solver), solution)
+                save_solution(output_dir.format(model="base", file=instance_file),ModelType.BASE, instance_file, solution)
+                plot_solution(solution, out_plot_path.format(model="base", file=instance_file))
+                save_statistics(out_stats_path.format(model="base", file=solver), solution)
 
 if __name__ == '__main__':
     main()
