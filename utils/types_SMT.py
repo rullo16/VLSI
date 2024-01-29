@@ -13,7 +13,6 @@ class SolverSMT(Enum):
     CVC4: str = "cvc4"
 
 class StatusEnum(Enum):
-    SMT = 3
     FEASIBLE = 2
     OPTIMAL = 1
     NO_SOLUTION = 0
@@ -22,7 +21,7 @@ class StatusEnum(Enum):
     ERROR = -3
 
 def CorrectSolution(x: StatusEnum):
-    return x in [StatusEnum.OPTIMAL, StatusEnum.FEASIBLE, StatusEnum.SMT]
+    return x in [StatusEnum.OPTIMAL, StatusEnum.FEASIBLE]
 
 class Coords(TypedDict):
     pos_x: List[int]
