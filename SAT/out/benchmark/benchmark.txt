@@ -1,0 +1,4 @@
+np: Total time = 0.40578 sec, Solved instances = 1
+seq: Total time = 0.43887 sec, Solved instances = 1
+bw: Total time = 0.71537 sec, Solved instances = 1
+he: Total time = 0.85981 sec, Solved instances = 1

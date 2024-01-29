@@ -39,7 +39,7 @@ def solverSAT(problem_number: int, instance_dir: str,out_dir = str, plot: bool =
 
     instance_file = os.path.join(instance_dir, f'ins-{problem_number}' + '.txt')
     instance_filename = f'ins-{problem_number}'
-    out_file = os.path.join(out_dir,instance_filename + '-rot-out.txt')
+    out_file = os.path.join(out_dir,instance_filename + '-out.txt')
     print('INSTANCE-' + str(problem_number))
 
     w, n, chips_w, chips_h, circuits, min_h, max_h = load_file(instance_file)
@@ -64,6 +64,7 @@ def solverSAT(problem_number: int, instance_dir: str,out_dir = str, plot: bool =
         for i in tqdm(range(h), desc='Constraint 1: Unique Circuit Placement', leave=False):
             for j in range(w):
                 solver.add(exactly_one([cells[i][j][k] for k in range(n)]))
+        
 
         # C2 - Valid Circuit Positioning
         for k in tqdm(range(n), desc='Constraint 2: Valid Circuit Positioning', leave=False):
@@ -83,32 +84,21 @@ def solverSAT(problem_number: int, instance_dir: str,out_dir = str, plot: bool =
                         solver.add(cells[i][j][k])
                     else:
                         solver.add(Not(cells[i][j][k]))
+                        
+        # C3 - Break Symmetry
+        corner_cells = []
+        for k in tqdm(range(n), desc='Constraint 4: Break Symmetry', leave=False):
+            corner_cells += [cells[0][0][k], cells[0][w-1][k], cells[h-1][0][k], cells[h-1][w-1][k]]
+            solver.add(at_least_one(corner_cells))
 
-        # C4 - Non-overlapping Constraint
-        for i in tqdm(range(h), desc='Constraint 4: Non-overlapping Circuits', leave=False):
-            for j in range(w):
-                for k1 in range(n):
-                    for k2 in range(k1+1, n):  # Avoid duplicate pairs
-                        # If circuit k1 is placed at (i, j), circuit k2 cannot be placed at the same position
-                        solver.add(Implies(cells[i][j][k1], Not(cells[i][j][k2])))
-         
+        # C5 - Lexicographic Ordering Constraints
+        for i in tqdm(range(h), desc='Constraint 5: Lexicographic Ordering Constraints', leave=False):
+            for j in range(w - 1):
+                for k in range(n):
+                    # Ensure that the circuit k at position (i, j) is placed before the circuit at (i, j+1)
+                    solver.add(Implies(cells[i][j][k], Or([Not(cells[i][j+1][l]) for l in range(n) if l != k])))
         
-        # C5 - Symmetry Breaking Constraint
-        for k1 in tqdm(range(n), desc='Constraint 5: Symmetry Breaking', leave=False):
-            for k2 in range(k1+1, n):  # Avoid duplicate pairs
-                for i in range(h):
-                    for j in range(w):
-                        # If circuit k1 and k2 are at the same y-coordinate, k1 should have smaller or equal x-coordinate
-                        solver.add(Implies(And(cells[i][j][k1], cells[i][j][k2]), Or([cells[i][j_prime][k1] for j_prime in range(j+1)])))
-
-        # C6 - Horizontal Symmetry Breaking Constraint
-        for k1 in tqdm(range(n), desc='Constraint 6: Horizontal Symmetry Breaking', leave=False):
-            for k2 in range(k1+1, n):  # Avoid duplicate pairs
-                for j in range(w):
-                    for i in range(h):
-                        # If circuit k1 and k2 are at the same x-coordinate, k1 should have smaller or equal y-coordinate
-                        solver.add(Implies(And(cells[i][j][k1], cells[i][j][k2]), Or([cells[i_prime][j][k1] for i_prime in range(i+1)])))
- 
+        
         # maximum time of execution
         timeout = 300000
         solver.set("timeout", timeout)

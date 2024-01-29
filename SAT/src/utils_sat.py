@@ -232,15 +232,15 @@ def write_file(w: int, n: int, x: List[int], y: List[int], circuits_pos: List[Tu
 
         f_out.write(str(round(elapsed_time,5)))
 
-def model_to_coordinates(model, p, w, l, n, r=None) -> tuple:
+def model_to_coordinates(model, cells, w, h, n, r=None) -> tuple:
     """
     Converts a model into coordinates.
 
     Args:
         model: A model object representing the solution to a problem.
-        p: A 3-dimensional array representing the objects in the problem.
+        cells: A 3-dimensional array representing the objects in the problem.
         w: The width of the problem space.
-        l: The length of the problem space.
+        h: The length of the problem space.
         n: The number of objects in the problem.
         r (optional): An array representing the rotation status of each object.
 
@@ -248,7 +248,7 @@ def model_to_coordinates(model, p, w, l, n, r=None) -> tuple:
         A tuple containing the minimum x coordinates for each object, the minimum y coordinates for each object,
         and the rotation status for each object.
     """
-    solution = np.array([[[bool(model[p[i][j][k]]) for k in range(n)] for j in range(w)] for i in range(l)])
+    solution = np.array([[[bool(model[cells[i][j][k]]) for k in range(n)] for j in range(w)] for i in range(h)])
     p_x_sol = []
     p_y_sol = []
     rot_sol = [False for _ in range(n)]
