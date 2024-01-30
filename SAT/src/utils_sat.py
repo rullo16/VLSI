@@ -44,12 +44,13 @@ def load_file(instance_name: str) -> tuple:
 
 import numpy as np
 
-def get_report(in_dir):
+def get_report(in_dir_default, in_dir_rotation):
     """
-    Reads data from files in a given directory and creates a histogram plot using the data.
+    Reads data from files in two given directories and creates a histogram plot using the data.
 
     Args:
-        in_dir (str): The path to the directory containing the data files.
+        in_dir_default (str): The path to the directory containing the data files for the default model.
+        in_dir_rotation (str): The path to the directory containing the data files for the rotation model.
 
     Returns:
         None. The function generates and displays a histogram plot based on the data read from the files.
@@ -58,13 +59,13 @@ def get_report(in_dir):
     seconds = []
     rotation = []
 
-    max_instance_num = max(int(filename.split('-')[1]) for filename in os.listdir(in_dir) if filename.startswith("ins-"))
+    max_instance_num = max(int(filename.split('-')[1]) for filename in os.listdir(in_dir_default) if filename.startswith("ins-"))
 
     for instance_num in range(1, max_instance_num + 1):
         # Check if the file for no rotation exists
         filename_no_rot = f"ins-{instance_num}-out.txt"
-        if filename_no_rot in os.listdir(in_dir):
-            with open(os.path.join(in_dir, filename_no_rot), 'r') as f:
+        if filename_no_rot in os.listdir(in_dir_default):
+            with open(os.path.join(in_dir_default, filename_no_rot), 'r') as f:
                 time = float(f.readlines()[-1].strip())
                 seconds.append(time)
                 rotation.append(0)
@@ -76,8 +77,8 @@ def get_report(in_dir):
 
         # Check if the file for rotation exists
         filename_rot = f"ins-{instance_num}-rot-out.txt"
-        if filename_rot in os.listdir(in_dir):
-            with open(os.path.join(in_dir, filename_rot), 'r') as f:
+        if filename_rot in os.listdir(in_dir_rotation):
+            with open(os.path.join(in_dir_rotation, filename_rot), 'r') as f:
                 time = float(f.readlines()[-1].strip())
                 seconds.append(time)
                 rotation.append(1)
@@ -179,26 +180,18 @@ def plot_solution(circuits_pos, chips_w, chips_h, w, h, rot_sol: List[bool]) -> 
 
     plt.show()
 
-def find_identical_circuits_with_count(chips_w, chips_h):
-    """
-    Finds groups of identical circuits based on their dimensions and counts the number of circuits in each group.
-    
-    Args:
-        chips_w: List of circuit widths.
-        chips_h: List of circuit heights.
-    
-    Return: 
-        dictionary: a dictionary where the keys are tuples representing the dimensions of identical circuits and the values are tuples containing the list of indices of identical circuits and the count of circuits in each group.
-    """
-    circuit_dimensions = {}
-    for idx, (w, h) in enumerate(zip(chips_w, chips_h)):
-        if (w, h) in circuit_dimensions:
-            circuit_dimensions[(w, h)].append(idx)
-        else:
-            circuit_dimensions[(w, h)] = [idx]
 
-    identical_circuits_with_count = {dims: (indices, len(indices)) for dims, indices in circuit_dimensions.items() if len(indices) > 1}
-    return identical_circuits_with_count
+def add_constraint_4(i, j, h, w,chips_w, cells, solver):
+    for k in range(w - chips_w[i]):
+        solver.add(Implies(And(*(cells[x][k][i] for x in range(h))), Not(And(*(cells[x][w - chips_w[j]][i] for x in range(h))))))
+        for l in range(chips_w[i], w - chips_w[j] + 1):
+            solver.add(Implies(And(*(cells[x][k][i] for x in range(h))), Implies(And(*(cells[x][l][i] for x in range(h))), And(*(cells[x][k][j] for x in range(h))))))
+
+def add_swapped_constraint_4(i, j, h, w, chips_w, cells, solver):
+    for k in range(w - chips_w[j]):
+        solver.add(Implies(And(*(cells[x][k][j] for x in range(h))), Not(And(*(cells[x][w - chips_w[i]][j] for x in range(h))))))
+        for l in range(chips_w[j], w - chips_w[i] + 1):
+            solver.add(Implies(And(*(cells[x][k][j] for x in range(h))), Implies(And(*(cells[x][l][j] for x in range(h))), And(*(cells[x][k][i] for x in range(h))))))
 
 def write_file(w: int, n: int, x: List[int], y: List[int], circuits_pos: List[Tuple[int, int]], rot_sol: List[bool], length: int, elapsed_time: float, out_file: str,r = False) -> None:
     """
@@ -303,5 +296,7 @@ def plot_histograms(data_df):
     plt.tight_layout()
     ax.set_yscale("symlog")
     ax.set_yticks([0, 1, 10, 100, 300])
+    plt.savefig('SAT.png')
     plt.show()
+
 

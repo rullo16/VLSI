@@ -51,6 +51,8 @@ def solverSAT(problem_number: int, instance_dir: str,out_dir = str, plot: bool =
 
         # VARIABLES
         cells = [[[Bool(f"cell_{i}_{j}_{k}") for k in range(n)] for j in range(w)] for i in range(h)]
+        left = [[Bool(f'left_{i}_{j}') for j in range(n)] for i in range(n)]
+        down = [[Bool(f'down_{i}_{j}') for j in range(n)] for i in range(n)]
         print("variables:", n * w * h)
         print("current h: ", h)
 
@@ -84,21 +86,58 @@ def solverSAT(problem_number: int, instance_dir: str,out_dir = str, plot: bool =
                         solver.add(cells[i][j][k])
                     else:
                         solver.add(Not(cells[i][j][k]))
-                        
-        # C3 - Break Symmetry
-        corner_cells = []
-        for k in tqdm(range(n), desc='Constraint 4: Break Symmetry', leave=False):
-            corner_cells += [cells[0][0][k], cells[0][w-1][k], cells[h-1][0][k], cells[h-1][w-1][k]]
-            solver.add(at_least_one(corner_cells))
 
-        # C5 - Lexicographic Ordering Constraints
-        for i in tqdm(range(h), desc='Constraint 5: Lexicographic Ordering Constraints', leave=False):
+
+        '''               
+        # New Constraint
+        for i in tqdm(range(n), desc='New Constraint', leave=False):
+            for j in range(n):
+                if i != j:
+                    for x in range(h):
+                        for y in range(chips_w[i]):
+                            solver.add(Implies(cells[x][0][i], Not(cells[x][y][j])))
+        
+        # New Constraint with Swapped Indexes
+        for i in tqdm(range(n), desc='New Constraint with Swapped Indexes', leave=False):
+            for j in range(n):
+                if i != j:
+                    for x in range(h):
+                        for y in range(chips_w[j]):
+                            solver.add(Implies(cells[x][0][j], Not(cells[x][y][i])))
+        '''
+
+        # C5 - Relative position constraint
+        for i in tqdm(range(n), desc='Constraint 5: Relative Position Constraint', leave=False):
+            for j in range(i + 1, n):
+                solver.add(Or(left[i][j], left[j][i], down[i][j], down[j][i]))
+
+        # C6 - Lexicographic Ordering Constraints
+        for i in tqdm(range(n), desc='Constraint 6: Lexicographic Ordering Constraints', leave=False):
+            for j in range(i + 1, n):
+                for k in range(chips_w[i]):
+                    solver.add(Implies(left[i][j], Not(cells[0][k][j])))
+                for k in range(chips_w[j]):
+                    solver.add(Implies(left[j][i], Not(cells[0][k][i])))
+
+        # C7 - Lexicographic Ordering Constraints
+        for i in tqdm(range(h), desc='Constraint 7: Lexicographic Ordering Constraints', leave=False):
             for j in range(w - 1):
                 for k in range(n):
                     # Ensure that the circuit k at position (i, j) is placed before the circuit at (i, j+1)
                     solver.add(Implies(cells[i][j][k], Or([Not(cells[i][j+1][l]) for l in range(n) if l != k])))
+
         
+        # C8 - Left and Down Constraints
+        for i in tqdm(range(n), desc='Constraint 8: Lexicographic Constraints', leave=False):
+            for j in range(i + 1, n):
+                for k in range(chips_h[i]):
+                    solver.add(Implies(down[i][j], Not(cells[k][0][j])))
+                for k in range(chips_h[j]):
+                    solver.add(Implies(down[j][i], Not(cells[k][0][i])))
+
         
+           
+
         # maximum time of execution
         timeout = 300000
         solver.set("timeout", timeout)
@@ -122,10 +161,20 @@ def solverSAT(problem_number: int, instance_dir: str,out_dir = str, plot: bool =
             return w, h, circuits_pos, rot_sol, chips_w, chips_h, n, circuits, elapsed_time
         else:
             print("UNSATISFIABLE or TIMEOUT")
-            h += 1
             return None
+ 
+        h += 1
 
     print("Execution completed or timeout reached")
     return None, None, None, None, None, None, None, None
 
 
+def main():
+    in_dir = "data\instances"
+    output_dir = "SAT\out\out_default"
+    problem_number = 16
+    plot = False
+    solverSAT(problem_number, in_dir, output_dir, plot)
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,10 @@
+11 11
+7
+8 4 0 0 NoRot
+5 4 0 7 NoRot
+3 6 8 5 NoRot
+3 5 0 4 Rot
+5 3 8 0 Rot
+3 4 5 7 NoRot
+3 3 5 4 NoRot
+1.90346

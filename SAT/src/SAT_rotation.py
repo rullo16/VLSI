@@ -43,7 +43,6 @@ def solverSAT(problem_number: int,instance_dir:str,out_dir:str, plot:bool=False)
     while h <= max_h:
         # Initialize variables
         cells = [[[Bool(f"cell_{i}_{j}_{k}") for k in range(n)] for j in range(w)] for i in range(h)]
-        
         rotated = [Bool(f"rotated_{k}") for k in range(n)] 
 
         print("variables:", n * w * h + n )
@@ -91,21 +90,17 @@ def solverSAT(problem_number: int,instance_dir:str,out_dir:str, plot:bool=False)
                     else:
                         solver.add(Not(cells[i][j][k]))
         
-        # C4 - Non-overlapping Constraint
-        for i in tqdm(range(h), desc='Constraint 4: Non-overlapping Circuits', leave=False):
-            for j in range(w):
-                for k1 in range(n):
-                    for k2 in range(k1+1, n):  # Avoid duplicate pairs
-                        # If circuit k1 is placed at (i, j), circuit k2 cannot be placed at the same position
-                        solver.add(Implies(cells[i][j][k1], Not(cells[i][j][k2])))
+        
 
-        # C5 - Lexicographic Ordering Constraints
-        for i in tqdm(range(h), desc='Constraint 5: Lexicographic Ordering Constraints', leave=False):
+        # C7 - Lexicographic Ordering Constraints
+        for i in tqdm(range(h), desc='Constraint 7: Lexicographic Ordering Constraints', leave=False):
             for j in range(w - 1):
                 for k in range(n):
                     # Ensure that the circuit k at position (i, j) is placed before the circuit at (i, j+1)
                     solver.add(Implies(cells[i][j][k], Or([Not(cells[i][j+1][l]) for l in range(n) if l != k])))
 
+        
+        
 
         # maximum time of execution
         timeout = 300000
@@ -131,9 +126,18 @@ def solverSAT(problem_number: int,instance_dir:str,out_dir:str, plot:bool=False)
         else:
             print("UNSATISFIABLE or TIMEOUT")
             h += 1
-            break
+            return None
 
     print("Execution completed or timeout reached")
     return None, None, None, None, None, None, None, None
 
 
+def main():
+    in_dir = "data\instances"
+    output_dir = "SAT\out\out_rotation"
+    problem_number = 1
+    plot = False
+    solverSAT(problem_number, in_dir, output_dir, plot)
+
+if __name__ == '__main__':
+    main()

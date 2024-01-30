@@ -1,0 +1,17 @@
+20 20
+14
+4 17 0 0 NoRot
+3 17 14 3 NoRot
+4 11 7 0 NoRot
+4 9 7 11 NoRot
+3 11 11 9 NoRot
+3 10 4 10 NoRot
+3 9 11 0 NoRot
+3 8 17 0 NoRot
+3 7 17 13 NoRot
+3 6 4 0 NoRot
+3 5 17 8 NoRot
+3 4 4 6 NoRot
+4 3 0 17 NoRot
+3 3 14 0 NoRot
+119.85982
