@@ -41,40 +41,16 @@ To execute all instances and generate solutions for the circuit placement proble
 cd CP/src
 ```
 
-1. Run the "solve_cp_instances.py" script with the required arguments:
+1. Run the "Solve_CP.py" script with the required arguments:
 
 ```console
-python solve_cp_instances.py -m <model_path> -i <instances_folder> -o <output_folder>
+python Solve_CP.py -s <solver_name> -i <instances_folder> -o <output_folder> -r <for rotation>
 
 ```
-Replace <model_path> with the path to the MiniZinc model file.
-Replace <instances_folder> with the path to the folder containing the instances.
-Replace <output_folder> with the path to the folder where the output solutions will be saved.
-
-## Execute a Single Instance
-
-To execute a single instance and generate its solution using the specified MiniZinc model, follow these steps:
-
-1. Open a terminal or command prompt.
-2. Navigate to the "CP/src" directory:
-```console
-cd CP/src
-```
-3. Open the "Solver.py" file and locate the 'main()' function at line 25.
-4. Modify the following variables in the 'main()' function:
-```python
-model = <model_path>
-in_file = <path_of_instance_file>
-out_dir = <folder_to_save_the_output>
-```
-Replace <model_path> with the path to the MiniZinc model file.
-Replace <path_of_instance_file> with the path to the specific instance file you want to solve.
-Replace <folder_to_save_the_output> with the path to the folder where you want to save the output for this instance.
-5. Save the changes in "Solver.py"
-6. Run the "Solver.py" script to solve the modified instance:
-```console
-python Solver.py
-```
+* Replace <solver_name> with either GEOCODE or CHUFFED.
+* Replace <instances_folder> with the path to the folder containing the instances.
+* Replace <output_folder> with the path to the folder where the output solutions will be saved.
+* -r :Use this flag to enable model rotation (optional).
 
 ## Folder Structure
 The folder structure of the project is as follows:
@@ -82,6 +58,14 @@ The folder structure of the project is as follows:
 CP/
   ├── instances/
   ├── out/
+  │    ├── base/ 
+  │    ├── plot/
+  │    │     ├── base/
+  │    │     └── rotation/
+  │    ├── rotation/
+  │    └── stats/
+  │         ├── base/
+  │         └── rotation/
   ├── src/
   │    ├── model.mzn
   │    ├── model_rotation.mzn

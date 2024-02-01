@@ -4,16 +4,14 @@ import os
 import argparse
 from glob import glob
 from Solver import solve
-import logging
 
-from typing import List, Tuple, Union
 from utils.logs_CP import print_log, save_solution
-from utils.types_CP import CorrectSolution, SolverMinizinc, ModelType
-from utils.display_results import plot_solution
-from utils.statistics_cp import save_statistics
+from utils.CP_class import CorrectSolution, MznSolver, ModelType
+from utils.display_results import plot_cmap
+from utils.table_cp import save_table
 
 
-def compute_solution(input_name, model_type: ModelType, solver:SolverMinizinc, timeout:int, free_search, verbose):
+def compute_solution(input_name, model_type: ModelType, solver:MznSolver, timeout:int, free_search, verbose):
     solution = solve(input_name, model_type, solver, timeout, free_search)
     print_log(solution)
     l = solution.height if hasattr(solution, "height") else 0
@@ -23,11 +21,11 @@ def compute_solution(input_name, model_type: ModelType, solver:SolverMinizinc, t
     return solution
 
 
-def compute_tests(test_instances, model_type:ModelType, solver:SolverMinizinc, free_search, timeout, verbose):
+def compute_tests(test_instances, model_type:ModelType, solver:MznSolver, free_search, timeout, verbose):
     
     for i in test_instances:
         solution = compute_solution(f"ins-{i}", model_type, solver, timeout, free_search, verbose)
-    print(f"\n - Computed instance {i}: {solution.status.name} {f'in {solution.solve_time:.2f} ms' if CorrectSolution(solution.status) else ''}")
+    print(f"\n - Computed instance {i}: {solution.status.name} {f'in {solution.time_solved:.2f} ms' if CorrectSolution(solution.status) else ''}")
 
 # Default input and output directories
 default_input_dir = "..\instances" if os.name == 'nt' else "../instances"
@@ -41,34 +39,33 @@ def main():
     parser.add_argument("-i", "--in_dir", help="Path to directory containing instances", required=False, type=str)
     parser.add_argument("-o", "--out_dir", help="Path to directory containing the output solutions in .txt format", required=False, type=str)
     parser.add_argument("-r", "--rotation", help="Use rotated circuits", required=False, action='store_true')
-    parser.add_argument("-s", "--solver", help="Solver to use", required=False, type=str, choices=[s.name for s in SolverMinizinc])
+    parser.add_argument("-s", "--solver", help="Solver to use", required=False, type=str, choices=[s.name for s in MznSolver])
     args = parser.parse_args()
 
     # Set input and output directories from arguments or default values
     input_dir = args.in_dir if args.in_dir is not None else default_input_dir
     output_dir = args.out_dir if args.out_dir is not None else out_path
-    solver = SolverMinizinc[args.solver] if args.solver is not None else SolverMinizinc.CHUFFED
-
+    solver = MznSolver[args.solver] if args.solver is not None else MznSolver.CHUFFED
 
     # Loop through all input files in the input directory
-    for i, input_file in enumerate(glob(os.path.join(input_dir, '*.dzn'))):
+    for i, _ in enumerate(glob(os.path.join(input_dir, '*.dzn'))):
         print("Solving instance", i)
         input_file = f'ins-{i}.dzn'
         # Call the solver function with the appropriate model file based on the rotation option
         if args.rotation:
             solution = solve(i+1, ModelType.ROTATION, solver, timeout=300, free_search=False)
             print_log(solution)
-            #if CorrectSolution(solution.status):
-            #    save_solution(output_dir, "rotation", input_file, solution)
-            #plot_solution(solution, out_plot_path.format(model="rotation", file=input_file))
-            save_statistics(out_stats_path.format(model="rotation", file=solver), solution)
+            if CorrectSolution(solution.status):
+                # save_solution(output_dir, "rotation", input_file, solution)
+                # plot_cmap(solution, out_plot_path.format(model="rotation", file=input_file))
+                save_table(out_stats_path.format(model="rotation", file=solver), solution)
         else:
             solution = solve(i+1, ModelType.BASE, solver, timeout=300, free_search=False)
             print_log(solution)
-            #if CorrectSolution(solution.status):
-            #    save_solution(output_dir, "base", input_file, solution)
-            #plot_solution(solution, out_plot_path.format(model="base", file=input_file))
-            save_statistics(out_stats_path.format(model="base", file=solver), solution)
+            if CorrectSolution(solution.status):
+                save_solution(output_dir, "base", input_file, solution)
+                plot_cmap(solution, out_plot_path.format(model="base", file=input_file))
+                save_table(out_stats_path.format(model="base", file=solver), solution)
 if __name__ == '__main__':
     main()
 

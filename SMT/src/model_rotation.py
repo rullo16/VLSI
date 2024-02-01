@@ -2,7 +2,7 @@ from z3 import *
 import numpy as np
 import time
 from itertools import combinations
-from utils.types_SMT import CorrectSolution, Solution, StatusEnum
+from utils.SMT_class import CorrectSolution, Solution, Status
 from z3 import *
 import os
 
