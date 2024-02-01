@@ -53,7 +53,7 @@ def main():
             else:
                 SAT_base.solverSAT(problem_number,in_dir, out_dir_base,args.plot)
 
-        get_report(out_dir_base,out_dir_rot)
+    get_report(out_dir_base,out_dir_rot)
             
 if __name__ == '__main__':
     main()

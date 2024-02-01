@@ -47,7 +47,7 @@ def solverSAT(problem_number: int,instance_dir:str,out_dir:str, plot:bool=False)
         down = [[Bool(f'down_{k}_{l}') for l in range(n)] for k in range(n)]
         rotated = [Bool(f"rotated_{k}") for k in range(n)] 
 
-        print("variables:", n * w * h + n )
+        print("variables:", n * w * h + n * n * 2 + n)
         print("current h: ", h)
         
         solver = Solver()
@@ -152,14 +152,12 @@ def solverSAT(problem_number: int,instance_dir:str,out_dir:str, plot:bool=False)
                 plot_solution(circuits_pos, chips_w, chips_h,w, h,rot_sol)
             return (w, h, circuits_pos, rot_sol, chips_w, chips_h, n, elapsed_time)
         elif outcome == unsat:
-            print("UNSATISFIABLE")
+            print("UNSATISFIABLE for the current h: ", h)
             h += 1
         else:
-            print("TIMEOUT")
-            return None
+            print("EXECUTION COMPLETED or TIMEOUT REACHED")
+            return None, None, None, None, None, None, None, None
 
-    print("Execution completed or timeout reached")
-    return None, None, None, None, None, None, None, None
 
 
 def main():

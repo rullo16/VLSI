@@ -161,17 +161,15 @@ def solverSAT(problem_number: int, instance_dir: str,out_dir = str, plot: bool =
             print("UNSATISFIABLE")
             h += 1
         else:
-            print("TIMEOUT")
-            return None
+            print("EXECUTION COMPLETED or TIMEOUT REACHED")
+            return None, None, None, None, None, None, None, None
 
-    print("Execution completed or timeout reached")
-    return None, None, None, None, None, None, None, None
 
 
 def main():
     in_dir = "data\instances"
     output_dir = "SAT\out\out_default"
-    problem_number = 11
+    problem_number = 1
     plot = True
     solverSAT(problem_number, in_dir, output_dir, plot)
 
