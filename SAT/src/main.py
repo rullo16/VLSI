@@ -34,26 +34,38 @@ def main():
     if args.all_or_instance.lower() == "all":    
         for i in range(len(glob(os.path.join(in_dir, '*.txt')))):
             problem_number = i + 1
-            out_dir_rot = os.path.join(out_dir, "out_rotation")
-            out_dir_base = os.path.join(out_dir, "out_default")
-            if args.rotation:
-                SAT_rotation.solverSAT(problem_number,in_dir, out_dir_rot,args.plot)
+            if args.out_dir:
+                if args.rotation:
+                    SAT_rotation.solverSAT(problem_number,in_dir, out_dir,args.plot)
+                else:
+                    SAT_base.solverSAT(problem_number,in_dir, out_dir,args.plot)
             else:
-                SAT_base.solverSAT(problem_number,in_dir, out_dir_base,args.plot)
+                out_dir_rot = os.path.join(out_dir, "out_rotation")
+                out_dir_base = os.path.join(out_dir, "out_default")
+                if args.rotation:
+                    SAT_rotation.solverSAT(problem_number,in_dir, out_dir_rot,args.plot)
+                else:
+                    SAT_base.solverSAT(problem_number,in_dir, out_dir_base,args.plot)
 
-        get_report(out_dir_base,out_dir_rot)  
+        get_report(out_dir_base,out_dir_rot)   
          
     else:
         for i in range(int(args.all_or_instance)):
             problem_number = i + 1
-            out_dir_rot = os.path.join(out_dir, "out_rotation")
-            out_dir_base = os.path.join(out_dir, "out_default")
-            if args.rotation:
-                SAT_rotation.solverSAT(problem_number,in_dir, out_dir_rot,args.plot)
+            if args.out_dir:
+                if args.rotation:
+                    SAT_rotation.solverSAT(problem_number,in_dir, out_dir,args.plot)
+                else:
+                    SAT_base.solverSAT(problem_number,in_dir, out_dir,args.plot)
             else:
-                SAT_base.solverSAT(problem_number,in_dir, out_dir_base,args.plot)
+                out_dir_rot = os.path.join(out_dir, "out_rotation")
+                out_dir_base = os.path.join(out_dir, "out_default")
+                if args.rotation:
+                    SAT_rotation.solverSAT(problem_number,in_dir, out_dir_rot,args.plot)
+                else:
+                    SAT_base.solverSAT(problem_number,in_dir, out_dir_base,args.plot)
 
-    get_report(out_dir_base,out_dir_rot)
+        get_report(out_dir_base,out_dir_rot)
             
 if __name__ == '__main__':
     main()
