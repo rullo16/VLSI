@@ -66,24 +66,18 @@ def solverSAT(problem_number: int,instance_dir:str,out_dir:str, plot:bool=False)
             possible_positions = []
             for i in range(h):
                 for j in range(w):
-                    # Posizioni per la configurazione ruotata
                     if i + chips_w[k] <= h and j + chips_h[k] <= w:
-                        rotated_pos = And([cells[i + di][j + dj][k] for di in range(chips_w[k]) for dj in range(chips_h[k])])
-                        # Aggiungi la condizione che il circuito k sia ruotato
+                        rotated_pos = And([cells[i + di][j + dj][k] for di in range(chips_w[k]) for dj in range(chips_h[k])]) 
                         possible_positions.append(And(rotated_pos, rotated[k]))
-
-                    # Posizioni per la configurazione non ruotata
                     if i + chips_h[k] <= h and j + chips_w[k] <= w:
                         non_rotated = And([cells[i + di][j + dj][k] for di in range(chips_h[k]) for dj in range(chips_w[k])])
-                        # Aggiungi la condizione che il circuito k non sia ruotato
                         possible_positions.append(And(non_rotated, Not(rotated[k])))
             solver.add(Or(possible_positions))
         
         
         # C3 - Priority Placement for Largest Circuit
-        
-        areas = [chips_h[i] * chips_w[i] for i in range(n)]  # calculate areas
-        largest_c = np.argmax(areas)  # find the index of the largest area
+        areas = [chips_h[i] * chips_w[i] for i in range(n)]  
+        largest_c = np.argmax(areas)  
         for i in tqdm(range(chips_h[largest_c]), desc='Constraint 3: set largest circuit first', leave=False):
             for j in range(chips_w[largest_c]):
                 for k in range(n):
@@ -92,46 +86,48 @@ def solverSAT(problem_number: int,instance_dir:str,out_dir:str, plot:bool=False)
                     else:
                         solver.add(Not(cells[i][j][k]))
         
-        # C3 - Relative position constraint
-        for i in tqdm(range(n), desc='Constraint 3: Relative Position Constraint', leave=False):
+        # C4 - Relative position constraint
+        for i in tqdm(range(n), desc='Constraint 4: Relative Position Constraint', leave=False):
             for j in range(i + 1, n):
                 solver.add(at_least_one([left[i][j], left[j][i], down[i][j], down[j][i]]))
-        '''
-        # C7 - Lexicographic Ordering Constraints
-        for i in tqdm(range(h), desc='Constraint 7: Lexicographic Ordering Constraints', leave=False):
-            for j in range(w - 1):
-                for k in range(n):
-                    # Ensure that the circuit k at position (i, j) is placed before the circuit at (i, j+1)
-                    solver.add(Implies(cells[i][j][k], Or([Not(cells[i][j+1][l]) for l in range(n) if l != k])))
-        '''
+        
+        
         # C5 - Leftmost Constraint
         for k in tqdm(range(n), desc='Constraint 5: Leftmost Constraint ', leave=False):
             for l in range(k + 1, n):
                 for i in range(h):
-                    solver.add(Or(Not(cells[i][0][k]), Not(left[l][k])))
-                    solver.add(Or(Not(cells[i][0][l]), Not(left[k][l])))
-        
-        
+                    solver.add(Implies(And(rotated[k], cells[i][0][k]), Not(left[l][k])))
+                    solver.add(Implies(And(Not(rotated[k]), cells[i][0][k]), Not(left[l][k])))
+                    solver.add(Implies(And(rotated[l], cells[i][0][l]), Not(left[k][l])))
+                    solver.add(Implies(And(Not(rotated[l]), cells[i][0][l]), Not(left[k][l])))
+
         # C6 - Rightmost Constraint
         for k in tqdm(range(n), desc='Constraint 6: Rightmost Constraint', leave=False):
             for l in range(k + 1, n):
                 for i in range(h):
-                    solver.add(Or(Not(cells[i][w-1][k]), Not(left[k][l])))
-                    solver.add(Or(Not(cells[i][w-1][l]), Not(left[l][k])))
+                    solver.add(Implies(And(rotated[l],cells[i][w-1][k]), Not(left[k][l])))
+                    solver.add(Implies(And(Not(rotated[l]),cells[i][w-1][k]), Not(left[k][l])))
+                    solver.add(Implies(And(rotated[k],cells[i][w-1][l]), Not(left[l][k])))
+                    solver.add(Implies(And(Not(rotated[k]),cells[i][w-1][l]), Not(left[l][k])))
+        
         
         # C7 - Topmost Constraint
         for k in tqdm(range(n), desc='Constraint 7: Topmost Constraint', leave=False):
             for l in range(k + 1, n):
                 for j in range(w):
-                    solver.add(Or(Not(cells[0][j][k]), Not(down[l][k])))
-                    solver.add(Or(Not(cells[0][j][l]), Not(down[k][l])))
-
+                    solver.add(Implies(And(rotated[k],cells[0][j][k]), Not(down[k][l])))
+                    solver.add(Implies(And(Not(rotated[k]),cells[0][j][k]), Not(down[k][l])))
+                    solver.add(Implies(And(rotated[l],cells[0][j][l]), Not(down[l][k])))
+                    solver.add(Implies(And(Not(rotated[l]),cells[0][j][l]), Not(down[l][k])))
+        
         # C8 - Bottommost Constraint
         for k in tqdm(range(n), desc='Constraint 8: Bottommost Constraint', leave=False):
             for l in range(k + 1, n):
                 for j in range(w):
-                    solver.add(Or(Not(cells[h - 1][j][k]), Not(down[k][l])))
-                    solver.add(Or(Not(cells[h -1][j][l]), Not(down[l][k])))
+                    solver.add(Implies(And(rotated[l],cells[h - 1][j][k]), Not(down[l][k])))
+                    solver.add(Implies(And(Not(rotated[l]),cells[h - 1][j][k]), Not(down[l][k])))
+                    solver.add(Implies(And(rotated[k],cells[h - 1][j][l]), Not(down[k][l])))
+                    solver.add(Implies(And(Not(rotated[k]),cells[h - 1][j][l]), Not(down[k][l])))
         
 
         # maximum time of execution
@@ -155,9 +151,11 @@ def solverSAT(problem_number: int,instance_dir:str,out_dir:str, plot:bool=False)
             if plot:
                 plot_solution(circuits_pos, chips_w, chips_h,w, h,rot_sol)
             return (w, h, circuits_pos, rot_sol, chips_w, chips_h, n, elapsed_time)
-        else:
-            print("UNSATISFIABLE or TIMEOUT")
+        elif outcome == unsat:
+            print("UNSATISFIABLE")
             h += 1
+        else:
+            print("TIMEOUT")
             return None
 
     print("Execution completed or timeout reached")

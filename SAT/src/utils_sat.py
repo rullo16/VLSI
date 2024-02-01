@@ -62,7 +62,6 @@ def get_report(in_dir_default, in_dir_rotation):
     max_instance_num = max(int(filename.split('-')[1]) for filename in os.listdir(in_dir_default) if filename.startswith("ins-"))
 
     for instance_num in range(1, max_instance_num + 1):
-        # Check if the file for no rotation exists
         filename_no_rot = f"ins-{instance_num}-out.txt"
         if filename_no_rot in os.listdir(in_dir_default):
             with open(os.path.join(in_dir_default, filename_no_rot), 'r') as f:
@@ -75,7 +74,6 @@ def get_report(in_dir_default, in_dir_rotation):
             rotation.append(np.nan)
             instances.append(instance_num)
 
-        # Check if the file for rotation exists
         filename_rot = f"ins-{instance_num}-rot-out.txt"
         if filename_rot in os.listdir(in_dir_rotation):
             with open(os.path.join(in_dir_rotation, filename_rot), 'r') as f:

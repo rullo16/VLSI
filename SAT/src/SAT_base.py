@@ -54,6 +54,7 @@ def solverSAT(problem_number: int, instance_dir: str,out_dir = str, plot: bool =
         left = [[Bool(f'left_{k}_{l}') for l in range(n)] for k in range(n)]
         down = [[Bool(f'down_{k}_{l}') for l in range(n)] for k in range(n)]
         
+        
         print("variables:", n * w * h + n * n * 2)
         print("current h: ", h)
 
@@ -68,7 +69,7 @@ def solverSAT(problem_number: int, instance_dir: str,out_dir = str, plot: bool =
             for j in range(w):
                 solver.add(exactly_one([cells[i][j][k] for k in range(n)]))
         
-
+        
         # C2 - Valid Circuit Positioning
         for k in tqdm(range(n), desc='Constraint 2: Valid Circuit Positioning', leave=False):
             possible_cells = []
@@ -76,8 +77,12 @@ def solverSAT(problem_number: int, instance_dir: str,out_dir = str, plot: bool =
                 for y in range(w - chips_w[k] + 1):
                     possible_cells.append(And([cells[x + i][y + j][k] for j in range(chips_w[k]) for i in range(chips_h[k])]))
             solver.add(at_least_one(possible_cells))
+        
 
-        C
+        # C3 - Relative position constraint
+        for i in tqdm(range(n), desc='Constraint 3: Relative Position Constraint', leave=False):
+            for j in range(i + 1, n):
+                solver.add(at_least_one([left[i][j], left[j][i], down[i][j], down[j][i]]))
 
         # C4 - Priority Placement for Largest Circuit    
         areas = [chips_h[i] * chips_w[i] for i in range(n)]  
@@ -89,94 +94,49 @@ def solverSAT(problem_number: int, instance_dir: str,out_dir = str, plot: bool =
                         solver.add(cells[i][j][k])
                     else:
                         solver.add(Not(cells[i][j][k]))
-        '''
-        for a in range(n):
-            solver.add(Not(left[a][a]))
-            solver.add(Not(down[a][a]))
-        '''
-        '''
-        # C6 -  Left to Right Order Constraint
-        for k in tqdm(range(n), desc='Constraint 6: Left to Right Order Constraint ', leave=False):
-            for l in range(k + 1, n):
-                for j in range(chips_w[k]):
-                    solver.add(Implies(left[k][l], Not(cells[0][j][k])))
-                for j in range(chips_w[l]):
-                    solver.add(Implies(left[l][k], Not(cells[0][j][l])))
-        '''
-
-        '''
-        # C8 - Right Border Avoidance
-        for k in tqdm(range(n), desc='Constraint 8: Right Border Avoidance', leave=False):
-            for l in range(k + 1, n):
-                for i in range(h):
-                    for j in range(w - chips_w[l] -1):  # Loop from the last column of l to the end of k
-                        solver.add(Implies(left[l][k], Not(cells[i][j][k])))
-                    for j in range(chips_w[k] - 1, chips_w[l], -1):
-                        solver.add(Implies(left[k][l], Not(cells[i][j][l])))
-        '''
         
 
-        '''
-        # C7 : Original
-        for i in tqdm(range(h), desc='Constraint 7: ', leave=False):
+        # C5- Lexicographic Ordering Constraints
+        for i in tqdm(range(h), desc='Constraint 5: Lexicographic Ordering Constraints: ', leave=False):
             for j in range(w - 1):
                 for k in range(n):
-                    # Ensure that the circuit k at position (i, j) is placed before the circuit at (i, j+1)
                     solver.add(Implies(cells[i][j][k], at_least_one([Not(cells[i][j+1][l]) for l in range(n) if l != k])))
-        '''
+
+
         
-        '''        
-        # C8 - Top to Bottom Order Constraint
-        for k in tqdm(range(n), desc='Constraint 8: Top to Bottom Order Constraint ', leave=False):
-            for l in range(k + 1, n):
-                for i in range(chips_h[k]):
-                    solver.add(Implies(down[k][l], Not(cells[i][0][l])))
-                for i in range(chips_h[l]):
-                    solver.add(Implies(down[l][k], Not(cells[i][0][k])))
-        '''
-        
-        # C5 - Leftmost Constraint
-        for k in tqdm(range(n), desc='Constraint 5: Leftmost Constraint ', leave=False):
+        # C6 - Leftmost Constraint
+        for k in tqdm(range(n), desc='Constraint 6: Leftmost Constraint ', leave=False):
             for l in range(k + 1, n):
                 for i in range(h):
                     solver.add(Or(Not(cells[i][0][k]), Not(left[l][k])))
                     solver.add(Or(Not(cells[i][0][l]), Not(left[k][l])))
         
         
-        # C6 - Rightmost Constraint
-        for k in tqdm(range(n), desc='Constraint 6: Rightmost Constraint', leave=False):
+        # C7 - Rightmost Constraint
+        for k in tqdm(range(n), desc='Constraint 7: Rightmost Constraint', leave=False):
             for l in range(k + 1, n):
                 for i in range(h):
                     solver.add(Or(Not(cells[i][w-1][k]), Not(left[k][l])))
                     solver.add(Or(Not(cells[i][w-1][l]), Not(left[l][k])))
         
-        # C7 - Topmost Constraint
-        for k in tqdm(range(n), desc='Constraint 7: Topmost Constraint', leave=False):
+        
+        # C8 - Topmost Constraint
+        for k in tqdm(range(n), desc='Constraint 8: Topmost Constraint', leave=False):
             for l in range(k + 1, n):
                 for j in range(w):
-                    solver.add(Or(Not(cells[0][j][k]), Not(down[l][k])))
-                    solver.add(Or(Not(cells[0][j][l]), Not(down[k][l])))
-
-        # C8 - Bottommost Constraint
-        for k in tqdm(range(n), desc='Constraint 8: Bottommost Constraint', leave=False):
+                    solver.add(Or(Not(cells[0][j][k]), Not(down[k][l])))
+                    solver.add(Or(Not(cells[0][j][l]), Not(down[l][k])))
+        
+        # C9 - Bottommost Constraint
+        for k in tqdm(range(n), desc='Constraint 9: Bottommost Constraint', leave=False):
             for l in range(k + 1, n):
                 for j in range(w):
-                    solver.add(Or(Not(cells[h - 1][j][k]), Not(down[k][l])))
-                    solver.add(Or(Not(cells[h -1][j][l]), Not(down[l][k])))
-          
-                        
+                    solver.add(Or(Not(cells[h - 1][j][k]), Not(down[l][k])))
+                    solver.add(Or(Not(cells[h -1][j][l]), Not(down[k][l])))
+        
         
 
-        '''
-        # C9 
-        for j in tqdm(range(w), desc='Constraint 9: ', leave=False):
-            for i in range(h - 1):
-                for k in range(n):
-                    solver.add(Implies(cells[i][j][k], Or([Not(cells[i+1][j][l]) for l in range(n) if l != k])))
-        '''
-           
-
-        # maximum time of execution
+        # maximum time of executionl
         timeout = 300000
         solver.set("timeout", timeout)
 
@@ -197,11 +157,12 @@ def solverSAT(problem_number: int, instance_dir: str,out_dir = str, plot: bool =
             if plot:
                 plot_solution_without_rotation(circuits_pos, chips_w, chips_h, w, h)
             return w, h, circuits_pos, rot_sol, chips_w, chips_h, n, circuits, elapsed_time
+        elif outcome == unsat:
+            print("UNSATISFIABLE")
+            h += 1
         else:
-            print("UNSATISFIABLE or TIMEOUT")
+            print("TIMEOUT")
             return None
- 
-        h += 1
 
     print("Execution completed or timeout reached")
     return None, None, None, None, None, None, None, None
@@ -210,7 +171,7 @@ def solverSAT(problem_number: int, instance_dir: str,out_dir = str, plot: bool =
 def main():
     in_dir = "data\instances"
     output_dir = "SAT\out\out_default"
-    problem_number = 16
+    problem_number = 11
     plot = True
     solverSAT(problem_number, in_dir, output_dir, plot)
 
