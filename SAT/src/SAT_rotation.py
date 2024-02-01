@@ -43,6 +43,8 @@ def solverSAT(problem_number: int,instance_dir:str,out_dir:str, plot:bool=False)
     while h <= max_h:
         # Initialize variables
         cells = [[[Bool(f"cell_{i}_{j}_{k}") for k in range(n)] for j in range(w)] for i in range(h)]
+        left = [[Bool(f'left_{k}_{l}') for l in range(n)] for k in range(n)]
+        down = [[Bool(f'down_{k}_{l}') for l in range(n)] for k in range(n)]
         rotated = [Bool(f"rotated_{k}") for k in range(n)] 
 
         print("variables:", n * w * h + n )
@@ -90,16 +92,46 @@ def solverSAT(problem_number: int,instance_dir:str,out_dir:str, plot:bool=False)
                     else:
                         solver.add(Not(cells[i][j][k]))
         
-        
-
+        # C3 - Relative position constraint
+        for i in tqdm(range(n), desc='Constraint 3: Relative Position Constraint', leave=False):
+            for j in range(i + 1, n):
+                solver.add(at_least_one([left[i][j], left[j][i], down[i][j], down[j][i]]))
+        '''
         # C7 - Lexicographic Ordering Constraints
         for i in tqdm(range(h), desc='Constraint 7: Lexicographic Ordering Constraints', leave=False):
             for j in range(w - 1):
                 for k in range(n):
                     # Ensure that the circuit k at position (i, j) is placed before the circuit at (i, j+1)
                     solver.add(Implies(cells[i][j][k], Or([Not(cells[i][j+1][l]) for l in range(n) if l != k])))
-
+        '''
+        # C5 - Leftmost Constraint
+        for k in tqdm(range(n), desc='Constraint 5: Leftmost Constraint ', leave=False):
+            for l in range(k + 1, n):
+                for i in range(h):
+                    solver.add(Or(Not(cells[i][0][k]), Not(left[l][k])))
+                    solver.add(Or(Not(cells[i][0][l]), Not(left[k][l])))
         
+        
+        # C6 - Rightmost Constraint
+        for k in tqdm(range(n), desc='Constraint 6: Rightmost Constraint', leave=False):
+            for l in range(k + 1, n):
+                for i in range(h):
+                    solver.add(Or(Not(cells[i][w-1][k]), Not(left[k][l])))
+                    solver.add(Or(Not(cells[i][w-1][l]), Not(left[l][k])))
+        
+        # C7 - Topmost Constraint
+        for k in tqdm(range(n), desc='Constraint 7: Topmost Constraint', leave=False):
+            for l in range(k + 1, n):
+                for j in range(w):
+                    solver.add(Or(Not(cells[0][j][k]), Not(down[l][k])))
+                    solver.add(Or(Not(cells[0][j][l]), Not(down[k][l])))
+
+        # C8 - Bottommost Constraint
+        for k in tqdm(range(n), desc='Constraint 8: Bottommost Constraint', leave=False):
+            for l in range(k + 1, n):
+                for j in range(w):
+                    solver.add(Or(Not(cells[h - 1][j][k]), Not(down[k][l])))
+                    solver.add(Or(Not(cells[h -1][j][l]), Not(down[l][k])))
         
 
         # maximum time of execution

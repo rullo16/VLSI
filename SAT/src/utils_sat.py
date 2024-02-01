@@ -33,7 +33,7 @@ def load_file(instance_name: str) -> tuple:
     n = int(lines[1])
 
     circuits = [tuple(map(int, line.split())) for line in lines[2:]]
-    circuits.sort(key=lambda x: x[0] * x[1], reverse=True)
+    circuits.sort(key=lambda x: x[0] * x[1])
 
     chips_w, chips_h = zip(*circuits)
 

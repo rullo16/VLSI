@@ -1,13 +1,13 @@
 16 16
 10
-7 9 0 0 NoRot
-3 12 4 13 Rot
-3 10 7 0 NoRot
-4 7 0 9 NoRot
-3 8 10 5 NoRot
-3 7 13 6 NoRot
+3 3 7 13 NoRot
+3 4 10 12 NoRot
+3 5 7 8 NoRot
 3 6 13 0 NoRot
-3 5 10 0 NoRot
-3 4 4 9 NoRot
-3 3 7 10 NoRot
-7.54807
+3 7 0 13 Rot
+3 8 7 0 NoRot
+4 7 0 9 Rot
+3 10 13 6 NoRot
+3 12 10 0 NoRot
+7 9 0 0 NoRot
+7.03999
