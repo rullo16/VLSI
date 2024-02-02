@@ -1,144 +1,87 @@
 from z3 import *
 import numpy as np
-import model_main
 import time
 from itertools import combinations
-from utils.types_SMT import CorrectSolution, Solution, StatusEnum
+from utils.SMT_class import CorrectSolution, Solution, Status
 from z3 import *
 import os
 
-def write_output(w, n, x, y, pos_x, pos_y, rotation, length, output_file, elapsed_time):
-    solution = Solution()
-    solution.input_name = output_file
-    solution.width = w
-    solution.n_circuits = n
-    solution.circuits = [[x[i], y[i]] for i in range(n)]
-    solution.height = length
-    solution.solve_time = elapsed_time
-    solution.rotation = rotation
-    solution.coords = {
-        "pos_x": pos_x,
-        "pos_y": pos_y
-    }
-    solution.status = StatusEnum.SMT
-    return solution
+# We append to the string all the script to avoid writing it manually
+def build_model(W, N, x, y, logic="LIA"):
+    # Lower and upper bounds for the height
+    l_low = max(max(y), math.ceil(sum([x[i]*y[i] for i in range(N)]) / W))
+    l_up = sum([max(y[i], x[i]) for i in range(N)])
+    lines = []
+
+    # Options
+    lines.append(f"(set-logic {logic})")
+
+    # Variables declaration
+    lines += [f"(declare-fun pos_x{i} () Int)" for i in range(N)]
+    lines += [f"(declare-fun pos_y{i} () Int)" for i in range(N)]
+    lines += [f"(declare-fun rot{i} () Bool)" for i in range(N)]
+    lines += [f"(declare-fun w_real{i} () Int)" for i in range(N)]
+    lines += [f"(declare-fun h_real{i} () Int)" for i in range(N)]
+
+    lines.append("(declare-fun l () Int)")
+
+    # Domain of variables
+    coord_up = min(x + y)
+    lines += [f"(assert (and (>= pos_x{i} 0) (<= pos_x{i} {W-coord_up})))" for i in range(N)]
+    lines += [f"(assert (and (>= pos_y{i} 0) (<= pos_y{i} {l_up-coord_up})))" for i in range(N)]
+    lines += [f"(assert (ite rot{i} (= w_real{i} {y[i]}) (= w_real{i} {x[i]})))" for i in range(N)]
+    lines += [f"(assert (ite rot{i} (= h_real{i} {x[i]}) (= h_real{i} {y[i]})))" for i in range(N)]
+
+    lines.append(f"(assert (and (>= l {l_low}) (<= l {l_up})))")
+
+    # Boundary constraints
+    lines += [f"(assert (and (<= (+ pos_x{i} w_real{i}) {W}) (<= (+ pos_y{i} h_real{i}) l)))" for i in range(N)]
+
+    # Non-Overlap constraints, at least one needs to be satisfied
+    for i in range(N):
+        for j in range(N):
+            if i < j:
+                lines.append(f"(assert (or (<= (+ pos_x{i} w_real{i}) pos_x{j}) "
+                                         f"(<= (+ pos_y{i} h_real{i}) pos_y{j}) "
+                                         f"(>= (- pos_x{i} w_real{j}) pos_x{j}) "
+                                         f"(>= (- pos_y{i} h_real{j}) pos_y{j})))"
+                )
+
+    # Cumulative constraints 
+    for w in y:
+        sum_var = [f"(ite (and (<= pos_y{i} {w}) (< {w} (+ pos_y{i} h_real{i}))) w_real{i} 0)" for i in range(N)]
+        lines.append(f"(assert (<= (+ {' '.join(sum_var)}) {W}))")
+
+    for h in x:
+        sum_var = [f"(ite (and (<= pos_x{i} {h}) (< {h} (+ pos_x{i} w_real{i}))) h_real{i} 0)" for i in range(N)]
+        lines.append(f"(assert (<= (+ {' '.join(sum_var)}) l))")
     
+    # Symmetry breaking same size 
+    for i in range(N):
+        for j in range(N):
+            if i < j:
+                lines.append(f"(assert (ite (and (= {x[i]} {x[j]}) (= {y[i]} {y[j]}))"
+                                        f" (and (<= pos_x{i} pos_x{j}) (<= pos_y{i} pos_y{j})) true))")
     
-    # with open(output_file, 'w+') as out_file:
-    #     out_file.write('{} {}\n'.format(w, length))
-    #     out_file.write('{}\n'.format(n))
+    # Symmetry breakings for rotation
+    lines += [f"(assert (= rot{i} false))" for i in range(N) if x[i] == y[i]]
+    lines += [f"(assert (= rot{i} false))" for i in range(N) if y[i] > W]
 
-    #     for i in range(n):
-    #         rotated = "rotated" if rotation else ""
-    #         out_file.write('{} {} {} {}\n'.format(x[i], y[i], pos_x[i], pos_y[i]))
-    #     out_file.write('{}'.format(elapsed_time))
+    # Symmetry breaking that inserts the circuit with the maximum area in (0, 0)
+    areas = [x[i]*y[i] for i in range(N)]
+    max_area_ind = areas.index(max(areas))
+    lines.append(f"(assert (= pos_x{max_area_ind} 0))")
+    lines.append(f"(assert (= pos_y{max_area_ind} 0))")
 
-def solver(input_file, output_dir):
-    solution = Solution()
-    # Extract instance name from the input file path
-    instance_name = os.path.splitext(os.path.basename(input_file))[0]
-    output_file = output_dir#os.path.join(output_dir, instance_name + '-out.txt')
+    lines.append("(check-sat)")
+    for i in range(N):
+        lines.append(f"(get-value (pos_x{i}))")
+        lines.append(f"(get-value (pos_y{i}))")
+        lines.append(f"(get-value (rot{i}))")
+    lines.append("(get-value (l))")
+    
+    with open(f"./model_rot.smt2", "w+") as f:
+        for line in lines:
+            f.write(line + '\n')
 
-    # Load instance data
-    w, n, x, y, max_l, w_mag = model_main.open_data(input_file)
-
-    # Circuit with highest value
-    index = np.argmax(np.asarray(y))
-
-    # Circuit Area
-    area = [x[i] * y[i] for i in range(n)]
-
-    # Variables
-    pos_x = [Int("pos_x_%s" % str(i + 1)) for i in range(n)]
-    pos_y = [Int("pos_y_%s" % str(i + 1)) for i in range(n)]
-
-    # Rotation
-    rotation = [Bool("rot_%s" % str(i+1)) for i in range(n)]
-
-    # Rotated dimensions
-    rot_x = [If(And(x[i] != y[i], rotation[i]), y[i], x[i]) for i in range(n)]
-    rot_y = [If(And(x[i] != y[i], rotation[i]), x[i], y[i]) for i in range(n)]
-
-    # Define the length as the maximum y-coordinate among the circuits
-    length = model_main.z3_maximum([pos_y[i] + y[i] for i in range(n)])
-
-    # Plate bounds
-    plate_x = [pos_x[i] >= 0 for i in range(n)]
-    plate_y = [pos_y[i] >= 0 for i in range(n)]
-
-    # Bounds for measures
-    bound_width = [And(rot_x[i] >= 1, rot_x[i] <= w) for i in range(n)]
-    bound_height = [And(rot_y[i] >= 1, rot_y[i] <= max_l) for i in range(n)]
-
-    # Differentiate all coordinates
-    alldifferent = [Distinct([w_mag * pos_y[i] + pos_x[i]]) for i in range(n)]
-
-    # Cumulative constraints
-    cumulative_x = model_main.z3_cumulative(pos_x, x, y, max_l)
-    cumulative_y = model_main.z3_cumulative(pos_y, y, x, w)
-
-    # Max width
-    max_w = [model_main.z3_maximum([pos_x[i] + x[i] for i in range(n)]) <= w]
-
-    # Max height
-    max_h = [model_main.z3_maximum([pos_y[i] + y[i] for i in range(n)]) <= max_l]
-
-    # Avoid overlapping
-    overlapping = []
-    for (i, j) in combinations(range(n), 2):
-        overlapping.append(Or(pos_x[i] + rot_x[i] <= pos_x[j], pos_x[j] + rot_x[j] <= pos_x[i],
-                              pos_y[i] + rot_y[i] <= pos_y[j], pos_y[j] + rot_y[j] <= pos_y[j]))
-
-    # Symmetries
-    symmetry = [And(pos_x[index] == 0, pos_y[index] == 0)]
-
-    # Move circuits to the left
-    move_left = [sum([If(pos_x[i] <= w//2, area[i], 0) for i in range(n)]) >= sum([If(pos_x[i] > w//2, area[i], 0) for i in range(n)])]
-
-    # Optimizer
-    optimizer = Optimize()
-    optimizer.add(plate_x + plate_y + alldifferent + overlapping + cumulative_x + cumulative_y +
-                  max_w + max_h + symmetry + bound_height + bound_width + move_left)
-    optimizer.minimize(length)
-
-    # Execution time
-    timeout = 300000
-    optimizer.set("timeout", timeout)
-
-    # Solving
-    print(f'{output_file}:', end='\t', flush=True)
-    starting_time = time.time()
-
-    p_x, p_y, r = [], [], []
-    if optimizer.check() == sat:
-        model = optimizer.model()
-        elapsed_time = time.time() - starting_time
-        print(f'{elapsed_time * 1000:.1f} ms')
-        # Get variable values
-        for i in range(n):
-            p_x.append(model.evaluate(pos_x[i]).as_string())
-            p_y.append(model.evaluate(pos_y[i]).as_string())
-            r_val = model[rotation[i]]
-            if r_val:
-                r.append(r_val)
-            else:
-                r.append(False)
-        solution_len = model.evaluate(length).as_string()
-        
-        return write_output(w, n, x, y, p_x, p_y, r, solution_len, output_file, elapsed_time)
-    elif optimizer.reason_unknown() == "timeout":
-        elapsed_time = time.time() - starting_time
-        print(f'{elapsed_time * 1000:.1f} ms')
-        print("Timeout")
-    else:
-        elapsed_time = time.time() - starting_time
-        print(f'{elapsed_time * 1000:.1f} ms')
-        print("UNSATISFIABLE")
-
-def main():
-    input_file = "../../data/instances/ins-8.txt"
-    output_dir = "../out/out_rotation"
-    solution = solver(input_file, output_dir)
-
-if __name__ == '__main__':
-    main()
+    return l_low, l_up

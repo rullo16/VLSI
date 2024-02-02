@@ -42,7 +42,6 @@ def load_file(instance_name: str) -> tuple:
 
     return w, n, list(chips_w), list(chips_h), circuits, min_h, max_h
 
-import numpy as np
 
 def get_report(in_dir_default, in_dir_rotation):
     """

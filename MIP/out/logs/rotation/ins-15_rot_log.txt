@@ -1,0 +1,4 @@
+Optimal solution found.
+Objective Value: 22.0
+Runtime: 2.9070000648498535 seconds
+Number of Solutions: 9

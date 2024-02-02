@@ -1,4 +1,4 @@
-from utils.types_CP import Solution, CorrectSolution, StatusEnum
+from utils.CP_class import Solution, CorrectSolution, Status_CP
 
 
 CORRECT_MSG="Solution found, but not optimal"
@@ -10,24 +10,24 @@ SMT_MSG = "SMT solution found"
 
 def print_log(solution: Solution):
     
-    if solution.status == StatusEnum.FEASIBLE:
+    if solution.status == Status_CP.FEASIBLE:
         print(f"{CORRECT_MSG}")
-    elif solution.status == StatusEnum.OPTIMAL:
+    elif solution.status == Status_CP.OPTIMAL:
         print(f"{OPTIMAL_MSG}")
-    elif solution.status == StatusEnum.NO_SOLUTION:
+    elif solution.status == Status_CP.NO_SOLUTION:
         print(f"{NO_SOLUTION_MSG}")
-    elif solution.status == StatusEnum.ERROR:
+    elif solution.status == Status_CP.ERROR:
         print(f"{ERROR_MSG}")
-    elif solution.status == StatusEnum.SMT:
+    elif solution.status == Status_CP.SMT:
         print(f"{SMT_MSG}")
     else:
         print(f"{GENERIC_MSG}")
 
     if CorrectSolution(solution.status):
-        print(f"Solved {solution.input_name} in {solution.solve_time:.2f} ms")
+        print(f"Solved {solution.input_name} in {solution.time_solved:.2f} ms")
         print(f"Width: {solution.width}")
         print(f"Height: {solution.height}")
-        for i in range(solution.n_circuits):
+        for i in range(solution.num_circuits):
             print(
                 (
                     f"{solution.circuits[i][1] if solution.rotation and solution.rotation[i] else solution.circuits[i][0]} \
@@ -42,7 +42,7 @@ def save_solution(out_path, model, file_name, data):
     
     w = data.width
     l = data.height
-    n = data.n_circuits
+    n = data.num_circuits
     x = [data.circuits[i][0] for i in range(n)]
     y = [data.circuits[i][1] for i in range(n)]
     pos_x = data.coords["pos_x"] if hasattr(data, "coords") else [-1 for i in range(n)]

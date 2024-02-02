@@ -1,0 +1,4 @@
+Optimization ended with status 9.
+Objective Value: 33.0
+Runtime: 300.06700015068054 seconds
+Number of Solutions: 10

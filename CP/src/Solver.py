@@ -5,7 +5,7 @@ import logging
 sys.path.append('../..')
 from datetime import timedelta
 #from utils.logs import Solution
-from utils.types_CP import CorrectSolution, SolverMinizinc, ModelType, StatusEnum, Solution
+from utils.CP_class import CorrectSolution, MznSolver, ModelType, Status_CP, Solution
 from minizinc import Instance, Model, Solver, Result, Status, MiniZincError
 
 def minizinc_solve_time(result: Result):
@@ -24,7 +24,7 @@ def get_minizinc_result(result: Result, instance:Instance, solution: Solution)->
 
     # inputs
     solution.circuits = instance.__getitem__("circuits")
-    solution.n_circuits = instance.__getitem__("n")
+    solution.num_circuits = instance.__getitem__("n")
     solution.width = instance.__getitem__("w")
 
     if hasattr(result.solution, "pos_x") and hasattr(result.solution, "pos_y"):
@@ -35,7 +35,7 @@ def get_minizinc_result(result: Result, instance:Instance, solution: Solution)->
     elif hasattr(result.solution, "place"):
         var_place = result.solution.place
         positions = result.solution.coords
-        coords = {"x": [None]*solution.n_circuits, "y": [None]*solution.n_circuits}
+        coords = {"x": [None]*solution.num_circuits, "y": [None]*solution.num_circuits}
 
         for i in range(len(var_place)):
             nc = var_place[i]
@@ -47,11 +47,11 @@ def get_minizinc_result(result: Result, instance:Instance, solution: Solution)->
 
     solution.rotation = None if not hasattr(result.solution, "rot") else result.solution.rot
     
-    solution.solve_time = minizinc_solve_time(result)
+    solution.time_solved = minizinc_solve_time(result)
 
     return solution
 
-def solve(input_name, model_type, solver: SolverMinizinc=SolverMinizinc.GECODE, timeout=None, free_search=False, height=None):
+def solve(input_name, model_type, solver: MznSolver=MznSolver.GECODE, timeout=None, free_search=False, height=None):
 
     input_file = f"../instances/ins-{input_name}.dzn"
 
@@ -89,28 +89,28 @@ def solve(input_name, model_type, solver: SolverMinizinc=SolverMinizinc.GECODE, 
     except MiniZincError as err:
         print(f"Error: {err}")
         solution = Solution()
-        solution.status = StatusEnum.ERROR
+        solution.status = Status_CP.ERROR
         solution.input_name = input_name
         return solution
     
     solution = Solution()
     solution.input_name = input_name
-    solution.solve_time = timeout
+    solution.time_solved = timeout
 
     print(result.status)
 
     if result.status == Status.SATISFIED:
-        solution.status = StatusEnum.FEASIBLE
+        solution.status = Status_CP.FEASIBLE
     elif result.status == Status.OPTIMAL_SOLUTION:
-        solution.status = StatusEnum.OPTIMAL
+        solution.status = Status_CP.OPTIMAL
     elif result.status == Status.UNSATISFIABLE:
-        solution.status = StatusEnum.INFEASIBLE
+        solution.status = Status_CP.INFEASIBLE
     elif result.status == Status.UNKNOWN:
-        solution.status = StatusEnum.NO_SOLUTION
+        solution.status = Status_CP.NO_SOLUTION
     elif result.status == Status.ERROR:
-        solution.status = StatusEnum.ERROR
+        solution.status = Status_CP.ERROR
     elif result.status == Status.UNBOUNDED:
-        solution.status = StatusEnum.UNBOUNDED
+        solution.status = Status_CP.UNBOUNDED
     else:
         raise BaseException("Unknown status")
     
@@ -122,7 +122,7 @@ def solve(input_name, model_type, solver: SolverMinizinc=SolverMinizinc.GECODE, 
 def main():
     input_file = '1'
 
-    solve(input_file, ModelType.BASE, SolverMinizinc.CHUFFED, timeout=300, free_search=False)
+    solve(input_file, ModelType.BASE, MznSolver.CHUFFED, timeout=300, free_search=False)
 
 if __name__ == '__main__':
     main()
