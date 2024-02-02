@@ -42,7 +42,6 @@ def load_file(instance_name: str) -> tuple:
 
     return w, n, list(chips_w), list(chips_h), circuits, min_h, max_h
 
-import numpy as np
 
 def get_report(in_dir_default, in_dir_rotation):
     """
@@ -58,29 +57,50 @@ def get_report(in_dir_default, in_dir_rotation):
     instances = []
     seconds = []
     rotation = []
+    
+    if os.listdir(in_dir_default) == []:
+        return print('PLEASE RUN SAT_base.py TO GENERATE THE DATA FOR THE BASE MODEL')
+    else:
+        max_instance_num = max(int(filename.split('-')[1]) for filename in os.listdir(in_dir_default) if filename.startswith("ins-"))
 
-    max_instance_num = max(int(filename.split('-')[1]) for filename in os.listdir(in_dir_default) if filename.startswith("ins-"))
+    if os.listdir(in_dir_rotation) == []:
+        return print('PLEASE RUN SAT_rotation.py TO GENERATE THE DATA FOR THE ROTATION MODEL')
+    else:
+        max_instance_num = max(max_instance_num, max(int(filename.split('-')[1]) for filename in os.listdir(in_dir_rotation) if filename.startswith("ins-")))
 
     for instance_num in range(1, max_instance_num + 1):
         filename_no_rot = f"ins-{instance_num}-out.txt"
+        if not os.path.exists(in_dir_default):
+            os.makedirs(in_dir_default)
         if filename_no_rot in os.listdir(in_dir_default):
             with open(os.path.join(in_dir_default, filename_no_rot), 'r') as f:
-                time = float(f.readlines()[-1].strip())
-                seconds.append(time)
-                rotation.append(0)
-                instances.append(instance_num)
+                lines = f.readlines()
+                if lines:
+                    time = float(lines[-1].strip())
+                    seconds.append(time)
+                    rotation.append(0)
+                    instances.append(instance_num)
+                else:
+                    time = np.nan
+                
         else:
             seconds.append(np.nan)
             rotation.append(np.nan)
             instances.append(instance_num)
-
+        
+        if not os.path.exists(in_dir_rotation):
+            os.makedirs(in_dir_rotation)
         filename_rot = f"ins-{instance_num}-rot-out.txt"
         if filename_rot in os.listdir(in_dir_rotation):
             with open(os.path.join(in_dir_rotation, filename_rot), 'r') as f:
-                time = float(f.readlines()[-1].strip())
-                seconds.append(time)
-                rotation.append(1)
-                instances.append(instance_num)
+                lines = f.readlines()
+                if lines:
+                    time = float(lines[-1].strip())
+                    seconds.append(time)
+                    rotation.append(1)
+                    instances.append(instance_num)
+                else:
+                    time = np.nan
         else:
             seconds.append(np.nan)
             rotation.append(np.nan)
