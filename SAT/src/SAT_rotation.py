@@ -161,8 +161,8 @@ def solverSAT(problem_number: int,instance_dir:str,out_dir:str, plot:bool=False)
 
 
 def main():
-    in_dir = "data\instances"
-    output_dir = "SAT\out\out_rotation"
+    in_dir = r"C:\Users\edoar.EDO\OneDrive\Desktop\VLSI_EDO\SAT\instances"
+    output_dir = "C:/Users/edoar.EDO/OneDrive/Desktop" 
     problem_number = 1
     plot = False
     solverSAT(problem_number, in_dir, output_dir, plot)

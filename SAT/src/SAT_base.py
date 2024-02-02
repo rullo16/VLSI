@@ -137,7 +137,7 @@ def solverSAT(problem_number: int, instance_dir: str,out_dir = str, plot: bool =
         
 
         # maximum time of executionl
-        timeout = 300000
+        timeout = 360000
         solver.set("timeout", timeout)
 
         # Check the solver and process the result
