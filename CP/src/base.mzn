@@ -32,17 +32,17 @@ constraint cumulative(pos_y, y, x, w); % Cumulative constraint for circuits in t
 % Symmetry breaking
 
 %Symmetry breaking constraint for samw width and height
-predicate symm_breaking_same() = forall(i,j in 1..n where i < j /\ x[i] == x[j] /\ y[i] == y[j])
+predicate same_dim_symm_break() = forall(i,j in 1..n where i < j /\ x[i] == x[j] /\ y[i] == y[j])
   (lex_lesseq([pos_x[i], pos_y[i]], [pos_x[j], pos_y[j]]));
 
 % Symmetry breaking wrt width and height
-predicate symm_breaking_axes() = let {
+predicate reflect_symm_break() = let {
   array[1..n] of var int: new_pos_x = [w-pos_x[i]-x[i] | i in 1..n];
   array[1..n] of var int: new_pos_y = [l-pos_y[i]-y[i] | i in 1..n];
 } in lex_lesseq(pos_x, new_pos_x) /\ lex_lesseq(pos_y, new_pos_y);
 
 %Final Symmetry breaking
-constraint symm_breaking_same() /\ symm_breaking_axes();
+constraint same_dim_symm_break() /\ reflect_symm_break();
 
 % Solver
 solve :: seq_search([
